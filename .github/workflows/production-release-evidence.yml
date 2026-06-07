@@ -164,7 +164,7 @@ jobs:
             $payload | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 -Path $artifactPath
           }
 
-          Invoke-RuntimeCi -Runtime python -Command "python -B -m pytest -o addopts= tests/testfourruntimeonlinecievidence.py -q" -VersionCommand "python --version"
+          Invoke-RuntimeCi -Runtime python -Command "python -m pytest -o addopts= tests/testfourruntimeonlinecievidence.py -q" -VersionCommand "python --version"
           Invoke-RuntimeCi -Runtime go -Command "go test ./gospider -run TestRuntimeCiSmoke -count=1" -VersionCommand "go version"
           Invoke-RuntimeCi -Runtime rust -Command "cargo test --manifest-path rustspider/runtime-ci-smoke/Cargo.toml" -VersionCommand "rustc --version"
           Invoke-RuntimeCi -Runtime java -Command "mvn -f javaspider/runtime-ci-smoke/pom.xml test" -VersionCommand "mvn --version"
@@ -195,7 +195,7 @@ jobs:
           if (-not $env:RUNNER_CONFIG) {
             @{
               "inputs" = @{
-                "four-runtime-online-ci" = $env:FOUR_RUNTIME_CI_MANIFEST.Replace("\", "/")
+                "four-runtime-online-ci" = $env:FOUR_RUNTIME_CI_EVIDENCE.Replace("\", "/")
               }
             } | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 -Path $generatedConfig
             $env:RUNNER_CONFIG = $generatedConfig
@@ -226,7 +226,7 @@ jobs:
               "production-ready" = $false
               "blocking-reasons" = @("productionreleaserunner-tool-missing")
               "inputs" = @{
-                "four-runtime-online-ci" = $env:FOUR_RUNTIME_CI_MANIFEST.Replace("\", "/")
+                "four-runtime-online-ci" = $env:FOUR_RUNTIME_CI_EVIDENCE.Replace("\", "/")
               }
             } | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 -Path $env:RUNNER_OUTPUT
             if ($env:FAIL_ON_BLOCKED -eq "true") {

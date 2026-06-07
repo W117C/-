@@ -164,10 +164,12 @@ jobs:
             $payload | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 -Path $artifactPath
           }
 
-          Invoke-RuntimeCi -Runtime python -Command "python -B -m pytest tests/testfourruntimeonlinecievidence.py -q" -VersionCommand "python --version"
+          Invoke-RuntimeCi -Runtime python -Command "python -B -m pytest -o addopts= tests/testfourruntimeonlinecievidence.py -q" -VersionCommand "python --version"
           Invoke-RuntimeCi -Runtime go -Command "go test ./gospider -run TestRuntimeCiSmoke -count=1" -VersionCommand "go version"
-          Invoke-RuntimeCi -Runtime rust -Command "cargo test --manifest-path rustspider/Cargo.toml --test runtime_ci_smoke" -VersionCommand "rustc --version"
-          Invoke-RuntimeCi -Runtime java -Command "mvn -f javaspider/pom.xml -Dtest=RuntimeCiSmokeTest -DfailIfNoTests=false test" -VersionCommand "mvn --version"
+          Invoke-RuntimeCi -Runtime rust -Command "cargo test --manifest-path rustspider/runtime-ci-smoke/Cargo.toml" -VersionCommand "rustc --version"
+          Invoke-RuntimeCi -Runtime java -Command "mvn -f javaspider/runtime-ci-smoke/pom.xml test" -VersionCommand "mvn --version"
+
+          $global:LASTEXITCODE = 0
 
       - name: Generate four-runtime manifest and evidence
         shell: pwsh

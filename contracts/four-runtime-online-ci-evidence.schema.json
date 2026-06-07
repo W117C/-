@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spider.local/contracts/four-runtime-online-ci-evidence.schema.json",
+  "title": "Spider Four Runtime Online CI Evidence",
+  "type": "object",
+  "required": [
+    "schema",
+    "generated-at",
+    "scope",
+    "evidence-mode",
+    "production-complete",
+    "production-ready",
+    "manifest",
+    "files",
+    "runtime-test-artifacts",
+    "runtime-artifact-summary",
+    "runtime-artifact-complete",
+    "completion-state",
+    "blockers",
+    "summary"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema": { "const": "spider.runtime.evidence" },
+    "generated-at": { "type": "string", "minLength": 1 },
+    "scope": { "const": "four-runtime-online-ci-evidence" },
+    "evidence-mode": { "const": "real-ci-artifact-manifest-normalization-no-exec" },
+    "production-complete": { "const": false },
+    "production-ready": { "const": false },
+    "note": { "type": "string" },
+    "manifest": {
+      "type": "object",
+      "required": ["path", "state", "error"],
+      "additionalProperties": true,
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "state": { "type": "string", "enum": ["present", "missing", "invalid"] },
+        "error": { "type": "string" },
+        "ci-provider": { "type": "string" },
+        "run-id": { "type": "string" },
+        "run-url": { "type": "string" },
+        "item-count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "runtime",
+          "status",
+          "valid",
+          "errors",
+          "command",
+          "duration-ms",
+          "exit-code",
+          "artifact-paths",
+          "artifact-path-states"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "runtime": { "type": "string", "enum": ["python", "go", "rust", "java"] },
+          "status": { "type": "string", "enum": ["passed", "failed", "blocked", "partial"] },
+          "valid": { "type": "boolean" },
+          "errors": { "type": "array", "items": { "type": "string" } },
+          "command": { "type": "string" },
+          "duration-ms": { "type": "integer", "minimum": 0 },
+          "exit-code": { "type": ["integer", "null"] },
+          "artifact-paths": { "type": "array", "items": { "type": "string" } },
+          "artifact-path-states": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "exists", "resolved-path"],
+              "properties": {
+                "path": { "type": "string" },
+                "exists": { "type": "boolean" },
+                "resolved-path": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "runtime-test-artifacts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "runtime",
+          "status",
+          "command",
+          "artifact-path",
+          "artifact-paths",
+          "artifact-state",
+          "artifact-schema",
+          "exit-code",
+          "duration-ms",
+          "placeholder"
+        ],
+        "properties": {
+          "runtime": { "type": "string", "enum": ["python", "go", "rust", "java"] },
+          "status": { "type": "string", "enum": ["passed", "failed", "blocked", "partial"] },
+          "command": { "type": "string" },
+          "artifact-path": { "type": "string" },
+          "artifact-paths": { "type": "array", "items": { "type": "string" } },
+          "artifact-state": { "type": "string", "enum": ["present", "missing"] },
+          "artifact-schema": { "const": "contracts/runtime-ci-artifact.schema.json" },
+          "exit-code": { "type": ["integer", "null"] },
+          "duration-ms": { "type": "integer", "minimum": 0 },
+          "placeholder": { "type": "boolean" }
+        }
+      }
+    },
+    "runtime-artifact-complete": { "type": "boolean" },
+    "completion-state": { "type": "string", "enum": ["complete", "partial", "blocked"] },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "required": [
+        "runtime-count",
+        "manifest-state",
+        "valid-runtime-count",
+        "passed-count",
+        "failed-count",
+        "blocked-count",
+        "missing-count",
+        "blocker-count",
+        "runtime-artifact-complete"
+      ],
+      "properties": {
+        "runtime-count": { "const": 4 },
+        "manifest-state": { "type": "string", "enum": ["present", "missing", "invalid"] },
+        "valid-runtime-count": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "passed-count": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "failed-count": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "blocked-count": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "missing-count": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "blocker-count": { "type": "integer", "minimum": 0 },
+        "runtime-artifact-complete": { "type": "boolean" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "runtime-artifact-complete": { "const": false }
+        },
+        "required": ["runtime-artifact-complete"]
+      },
+      "then": {
+        "properties": {
+          "completion-state": { "enum": ["partial", "blocked"] }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "completion-state": { "const": "complete" }
+        },
+        "required": ["completion-state"]
+      },
+      "then": {
+        "properties": {
+          "runtime-artifact-complete": { "const": true }
+        }
+      }
+    }
+  ]
+}

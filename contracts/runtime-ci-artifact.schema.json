@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spider.local/contracts/runtime-ci-artifact.schema.json",
+  "title": "Spider Runtime CI Artifact",
+  "type": "object",
+  "required": [
+    "schema",
+    "runtime",
+    "status",
+    "command",
+    "version",
+    "artifact-paths"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema": { "const": "spider.runtime-ci.artifact" },
+    "runtime": { "type": "string", "enum": ["python", "go", "rust", "java"] },
+    "status": {
+      "type": "string",
+      "enum": ["passed", "failed", "blocked", "partial"]
+    },
+    "state": {
+      "type": "string",
+      "enum": ["succeeded", "failed", "blocked", "partial"]
+    },
+    "command": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "versions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "artifact-paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "exit-code": { "type": "integer" },
+    "failure-reason": { "type": "string" },
+    "duration-ms": { "type": "integer", "minimum": 0 },
+    "runtime-report-path": { "type": "string" },
+    "stdout-path": { "type": "string" },
+    "stderr-path": { "type": "string" },
+    "local-evidence-mode": { "type": "string" },
+    "network-executed": { "type": "boolean" },
+    "runtime-command-executed": { "type": "boolean" },
+    "runtime-smoke": { "type": "object" },
+    "runtime-invocation": { "type": "object" },
+    "runtime-job-payload": { "type": "object" },
+    "binary-probe": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "enum": ["failed", "blocked", "partial"] } },
+        "required": ["status"]
+      },
+      "then": { "required": ["failure-reason"] }
+    }
+  ]
+}

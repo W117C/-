@@ -1,7 +1,0 @@
-[package]
-name = "rustspider-runtime-ci-smoke"
-version = "1.0.0"
-edition = "2021"
-
-[lib]
-path = "src/lib.rs"

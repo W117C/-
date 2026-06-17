@@ -1,0 +1,14 @@
+# SecAgent configuration. Copy to config.yaml and edit.
+# Values may also be overridden by environment variables (see config.py).
+database:
+  path: ./data/secagent.db
+quota:
+  default_per_token: 100
+compliance:
+  blocklist_path: ./data/blocklist.json
+  max_concurrent_per_target: 5
+  nuclei_rate_limit: 150
+retention:
+  finding_ttl_days: 90
+tools:
+  binaries_dir: ./bin

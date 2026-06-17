@@ -26,12 +26,14 @@ CREATE TABLE IF NOT EXISTS audit_log (
     row_hash        TEXT NOT NULL
 );
 
--- quota: per-token counter
+-- quota: per-token counter.
+-- No FK to authorizations: the registry creates both rows together in issue(),
+-- and quota's atomic check-and-decrement must not be coupled to the
+-- authorizations table state (single-responsibility per spec §5.3).
 CREATE TABLE IF NOT EXISTS quota (
     token           TEXT PRIMARY KEY,
     remaining       INTEGER NOT NULL,
-    total           INTEGER NOT NULL,
-    FOREIGN KEY (token) REFERENCES authorizations(token)
+    total           INTEGER NOT NULL
 );
 
 -- findings: discovered results (defense line 3 retention applies here later)

@@ -223,6 +223,22 @@ def test_adapter_nonzero_returncode_raises_tool_failed():
             adapter.run({"scope": "github.com/acme/webapp"})
 
 
+def test_adapter_exit_one_with_findings_is_success():
+    """gitleaks exits 1 when it finds leaks — that is a normal result, not a
+    failure. The adapter must return the parsed findings rather than raise."""
+    adapter = GitleaksAdapter()
+    stdout = json.dumps([_canned_gitleaks_json()[0]])
+    mock_result = MagicMock()
+    mock_result.returncode = 1  # leaks found
+    mock_result.stdout = stdout
+    mock_result.stderr = ""
+    mock_result.json_output = None
+    with patch.object(adapter, "_launch", return_value=mock_result):
+        findings = adapter.run({"scope": "github.com/acme/webapp"})
+    assert len(findings) == 1
+    assert findings[0].type == FindingType.SECRET_LEAK
+
+
 def test_adapter_command_includes_detect_and_source():
     adapter = GitleaksAdapter()
     cmd_used = None

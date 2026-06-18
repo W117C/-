@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
-# SecAgent MCP server launcher for Reasonix.
-# Sets the env vars secagent needs (absolute DB + binaries paths) then starts
-# the stdio MCP server. Reasonix's `name=command` mcp format has no env field,
-# so this wrapper is the clean way to inject them.
+# SecAgent MCP server launcher.
+# Sets the env vars secagent needs (DB + binaries paths) then starts the stdio
+# MCP server. Designed to be portable: paths resolve relative to this script,
+# not hardcoded to a specific developer's home directory.
 set -euo pipefail
 
-export SECAGENT_DB_PATH="/Users/ze/Downloads/爬虫/secagent/data/secagent.db"
-export SECAGENT_BINARIES_DIR="/Users/ze/Downloads/爬虫/secagent/bin"
-export SECAGENT_DEFAULT_QUOTA="100"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-exec /Users/ze/.workbuddy/binaries/python/envs/default/bin/python -m secagent.server
+export SECAGENT_DB_PATH="${SECAGENT_DB_PATH:-$PROJECT_DIR/data/secagent.db}"
+export SECAGENT_BINARIES_DIR="${SECAGENT_BINARIES_DIR:-$PROJECT_DIR/bin}"
+export SECAGENT_DEFAULT_QUOTA="${SECAGENT_DEFAULT_QUOTA:-100}"
+
+# Prefer the bundled workbuddy python if present, else fall back to whatever
+# `python3` / `python` is on PATH.
+if [ -x "$HOME/.workbuddy/binaries/python/envs/default/bin/python" ]; then
+    PY="$HOME/.workbuddy/binaries/python/envs/default/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+    PY="python3"
+else
+    PY="python"
+fi
+
+exec "$PY" -m secagent.server

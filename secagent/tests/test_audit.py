@@ -62,3 +62,44 @@ def test_audit_verify_chain_passes_when_intact(tmp_db: str):
     logger = AuditLogger(store)
     logger.log(caller_id="u", authz_token="t", tool="x", target="a", scope_at_call="a", outcome="executed", findings_count=0, quota_used=1, duration_ms=1)
     assert logger.verify_chain() is True
+
+
+def test_audit_does_not_store_plaintext_token(tmp_db: str):
+    """Long-lived authz tokens must be fingerprinted, never stored plaintext,
+    so the credential cannot be recovered from the audit table."""
+    store = SQLiteStore(tmp_db)
+    store.bootstrap()
+    logger = AuditLogger(store)
+    secret_token = "auth_super_secret_long_lived_token_xyz"
+    logger.log(
+        caller_id="u", authz_token=secret_token, tool="x", target="a",
+        scope_at_call="a", outcome="executed", findings_count=0, quota_used=1,
+    )
+    conn = store._connect()
+    try:
+        stored = conn.execute("SELECT authz_token FROM audit_log").fetchone()[0]
+    finally:
+        conn.close()
+    # The plaintext must not be recoverable.
+    assert secret_token not in stored
+    # A non-empty fingerprint is stored instead (deterministic, 16 hex chars).
+    assert len(stored) == 16
+    assert all(c in "0123456789abcdef" for c in stored)
+
+
+def test_audit_token_fingerprint_is_deterministic(tmp_db: str):
+    """The same token always yields the same fingerprint, enabling correlation."""
+    store = SQLiteStore(tmp_db)
+    store.bootstrap()
+    logger = AuditLogger(store)
+    logger.log(caller_id="u", authz_token="tok", tool="x", target="a",
+               scope_at_call="a", outcome="executed", findings_count=0, quota_used=1)
+    logger.log(caller_id="u", authz_token="tok", tool="x", target="b",
+               scope_at_call="a", outcome="executed", findings_count=0, quota_used=1)
+    conn = store._connect()
+    try:
+        fps = [r[0] for r in conn.execute("SELECT authz_token FROM audit_log").fetchall()]
+    finally:
+        conn.close()
+    assert fps[0] == fps[1]
+    assert len(fps[0]) == 16

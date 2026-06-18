@@ -71,3 +71,39 @@ def test_launcher_passes_timeout_to_communicate():
 
     # communicate must be called with the launcher's timeout
     mock_proc.communicate.assert_called_once_with(timeout=5)
+
+
+def test_launcher_kills_subprocess_on_timeout():
+    """A timed-out subprocess must be killed so nuclei/subfinder do not keep
+    probing the target in the background (compliance + resource risk)."""
+    with patch("secagent.binmgmt.launcher.subprocess.Popen") as mock_popen:
+        mock_proc = MagicMock()
+        mock_proc.communicate.side_effect = subprocess.TimeoutExpired(cmd="nuclei", timeout=1)
+        mock_popen.return_value = mock_proc
+
+        launcher = Launcher(timeout_sec=1)
+        with pytest.raises(ToolTimeoutError):
+            launcher.run(["nuclei", "-u", "acme.com"], target_hint="acme.com")
+
+    mock_proc.kill.assert_called_once()
+    mock_proc.wait.assert_called()
+
+
+def test_launcher_timeout_uses_target_hint_not_command_line():
+    """The timeout error must surface the logical target, not the raw command
+    line (which may contain temp-file paths)."""
+    with patch("secagent.binmgmt.launcher.subprocess.Popen") as mock_popen:
+        mock_proc = MagicMock()
+        mock_proc.communicate.side_effect = subprocess.TimeoutExpired(cmd="nuclei", timeout=1)
+        mock_popen.return_value = mock_proc
+
+        launcher = Launcher(timeout_sec=1)
+        with pytest.raises(ToolTimeoutError) as exc_info:
+            launcher.run(
+                ["nuclei", "-l", "/tmp/secagent_targets_xyz.txt"],
+                target_hint="acme.com",
+            )
+
+    assert exc_info.value.target == "acme.com"
+    # The internal temp path must not leak into the user-facing message.
+    assert "/tmp/secagent_targets_xyz.txt" not in str(exc_info.value)

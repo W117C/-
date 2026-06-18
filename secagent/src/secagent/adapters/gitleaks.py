@@ -82,9 +82,12 @@ class GitleaksAdapter(BaseAdapter):
             "--no-banner",
         ]
 
-        result = self._launch(cmd)
+        result = self._launch(cmd, target_hint=repo_path)
 
-        if result.returncode != 0:
+        # gitleaks exit codes: 0 = no leaks, 1 = leaks found (a NORMAL result,
+        # not a failure), 2+ = actual error. Treat only >1 as failure, otherwise
+        # we'd raise ToolFailedError every time secrets are detected.
+        if result.returncode not in (0, 1):
             raise ToolFailedError(
                 tool=self.tool_name,
                 detail=f"exit code {result.returncode}: {result.stderr[:200]}",

@@ -12,7 +12,7 @@ from __future__ import annotations
 from secagent.core.audit import AuditLogger
 from secagent.core.authz import AuthorizationScope, ScopeType, check_target_in_scope
 from secagent.core.blocklist import Blocklist
-from secagent.core.errors import NotAuthorizedError
+from secagent.core.errors import ComplianceBlockError, NotAuthorizedError
 from secagent.core.quota import QuotaManager
 from secagent.storage.sqlite_store import SQLiteStore
 
@@ -51,10 +51,12 @@ class ComplianceGate:
                            scope_at_call=scope.value, outcome="not_authorized", findings_count=0, quota_used=0)
             raise NotAuthorizedError(target=target, scope_domain=scope.value)
 
-        # blocklist check (even in-scope targets can be refused)
+        # blocklist check (even in-scope targets can be refused). Only catch
+        # ComplianceBlockError here — a broad `except Exception` would mask
+        # unrelated bugs as a compliance block and re-raise the wrong cause.
         try:
             self.blocklist.check(target)
-        except Exception:
+        except ComplianceBlockError:
             self.audit.log(caller_id=caller_id, authz_token=token, tool=tool, target=target,
                            scope_at_call=scope.value, outcome="compliance_block", findings_count=0, quota_used=0)
             raise

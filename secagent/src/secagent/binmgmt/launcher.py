@@ -36,10 +36,17 @@ class Launcher:
         cmd: list[str],
         env: dict[str, str] | None = None,
         cwd: str | None = None,
+        target_hint: str | None = None,
     ) -> LaunchResult:
-        """Execute a binary command. Raises ToolTimeoutError or ToolFailedError."""
+        """Execute a binary command. Raises ToolTimeoutError or ToolFailedError.
+
+        target_hint is the logical scan target (domain/URL/repo). It is used
+        only in the timeout error message so the full command line — which may
+        contain temp-file paths or other internals — is NOT leaked to callers.
+        """
         last_error: str = ""
         for attempt in range(1 + self.retries):
+            proc: subprocess.Popen | None = None
             try:
                 proc = subprocess.Popen(
                     cmd,
@@ -55,10 +62,19 @@ class Launcher:
                     stderr=stderr_bytes.decode("utf-8", errors="replace"),
                 )
             except subprocess.TimeoutExpired:
+                # Kill the runaway subprocess so nuclei/subfinder do NOT keep
+                # probing the target in the background after we report a timeout
+                # (compliance + resource risk). Best-effort: ignore cleanup errors.
+                if proc is not None:
+                    proc.kill()
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
                 from secagent.core.errors import ToolTimeoutError
                 raise ToolTimeoutError(
                     tool=cmd[0] if cmd else "unknown",
-                    target=" ".join(cmd),
+                    target=target_hint or "<unknown>",
                 )
             except (OSError, FileNotFoundError) as exc:
                 last_error = str(exc)

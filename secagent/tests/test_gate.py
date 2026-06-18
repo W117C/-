@@ -65,3 +65,35 @@ def test_gate_refuses_when_quota_exhausted(tmp_db: str):
     with pytest.raises(RateLimitedError):
         gate.check(token=token, tool="x", target="acme.com", caller_id="u")
         gate.commit_findings(token=token, count=0, quota_used=1)
+
+
+def test_gate_quota_precheck_refuses_before_tool_runs(tmp_db: str):
+    """With quota exhausted, check() must raise RateLimitedError itself —
+    not wait until commit — so the tool never runs against the target."""
+    gate, token = _setup(tmp_db)
+    for _ in range(5):
+        gate.check(token=token, tool="x", target="acme.com", caller_id="u")
+        gate.commit_findings(token=token, count=0, quota_used=1)
+    # check() itself must now raise, without needing commit_findings to run.
+    with pytest.raises(RateLimitedError):
+        gate.check(token=token, tool="x", target="acme.com", caller_id="u")
+
+
+def test_commit_atomicity_rolls_back_quota_when_audit_fails(tmp_db: str, monkeypatch):
+    """If the audit write fails after the quota decrement, the quota decrement
+    must roll back — quota must NOT be consumed without an audit trail."""
+    gate, token = _setup(tmp_db)
+    remaining_before = gate.quota.remaining(token)
+
+    # Force the audit row insert to fail inside the transaction.
+    def boom(conn, **kwargs):
+        raise RuntimeError("simulated audit failure")
+
+    monkeypatch.setattr(gate.audit, "log_in_tx", boom)
+
+    with pytest.raises(RuntimeError):
+        gate.commit_findings(token=token, count=1, quota_used=1)
+
+    # Transaction rolled back → quota unchanged, no audit row added.
+    assert gate.quota.remaining(token) == remaining_before
+    assert gate._conn_count_audit() == 0

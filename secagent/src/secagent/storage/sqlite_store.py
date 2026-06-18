@@ -6,8 +6,10 @@ SQL files applied in order; a `schema_meta` table records the current version.
 from __future__ import annotations
 
 import sqlite3
+from contextlib import contextmanager
 from importlib import resources
 from pathlib import Path
+from typing import Iterator
 
 
 class SQLiteStore:
@@ -17,8 +19,37 @@ class SQLiteStore:
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
+        # WAL journal + a 5s busy timeout make concurrent writes (multiple MCP
+        # clients, or the quota/audit writers) tolerate lock contention instead
+        # of raising "database is locked" on the first conflict.
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA busy_timeout = 5000")
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
+
+    @contextmanager
+    def transaction(self) -> Iterator[sqlite3.Connection]:
+        """Yield a connection inside a BEGIN IMMEDIATE transaction.
+
+        Used to group multi-statement writes (e.g. quota decrement + audit
+        insert) so they commit atomically. On any exception the transaction is
+        rolled back; a failing ROLLBACK is swallowed so it never masks the
+        original error. The connection is always closed on exit.
+        """
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                yield conn
+                conn.execute("COMMIT")
+            except Exception:
+                try:
+                    conn.execute("ROLLBACK")
+                except Exception:
+                    pass
+                raise
+        finally:
+            conn.close()
 
     def bootstrap(self) -> None:
         """Create schema_meta if missing and apply any pending migrations."""

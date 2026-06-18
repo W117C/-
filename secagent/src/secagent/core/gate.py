@@ -52,7 +52,7 @@ class ComplianceGate:
             raise NotAuthorizedError(target=target, scope_domain=scope.value)
 
         # blocklist check (even in-scope targets can be refused). Only catch
-        # ComplianceBlockError here — a broad `except Exception` would mask
+        # ComplianceBlockError — a broad `except Exception` would mask
         # unrelated bugs as a compliance block and re-raise the wrong cause.
         try:
             self.blocklist.check(target)
@@ -61,14 +61,34 @@ class ComplianceGate:
                            scope_at_call=scope.value, outcome="compliance_block", findings_count=0, quota_used=0)
             raise
 
+        # quota precheck: refuse BEFORE running the tool rather than after, so
+        # an exhausted quota does not waste target resources and wall-clock.
+        # The authoritative decrement still happens in commit_findings(); this
+        # is a best-effort guard against the common race.
+        if self.quota.remaining(token) <= 0:
+            self.audit.log(caller_id=caller_id, authz_token=token, tool=tool, target=target,
+                           scope_at_call=scope.value, outcome="rate_limited", findings_count=0, quota_used=0)
+            from secagent.core.errors import RateLimitedError
+            raise RateLimitedError("quota exhausted")
+
         return scope
 
     def commit_findings(self, *, token: str, count: int, quota_used: int, caller_id: str = "system",
                         tool: str = "", target: str = "", scope_value: str | None = None) -> None:
-        """Post-run: decrement quota and log an executed outcome."""
-        self.quota.decrement(token, amount=quota_used)
-        self.audit.log(caller_id=caller_id, authz_token=token, tool=tool, target=target,
-                       scope_at_call=scope_value, outcome="executed", findings_count=count, quota_used=quota_used)
+        """Post-run: decrement quota and log an executed outcome, atomically.
+
+        The quota decrement and the audit insert run inside a single
+        BEGIN IMMEDIATE transaction so that either both happen or neither does
+        — a failure in the audit write rolls back the quota decrement rather
+        than leaving quota consumed with no audit trail.
+        """
+        with self.store.transaction() as conn:
+            self.quota.decrement_in_tx(conn, token, amount=quota_used)
+            self.audit.log_in_tx(
+                conn, caller_id=caller_id, authz_token=token, tool=tool, target=target,
+                scope_at_call=scope_value, outcome="executed", findings_count=count,
+                quota_used=quota_used,
+            )
 
     def _conn_count_audit(self) -> int:
         conn = self.store._connect()

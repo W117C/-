@@ -4,8 +4,20 @@ Security MCP server that wraps **SuperSpider** + open-source tooling
 (Nuclei/Subfinder/httpx/gitleaks/theHarvester) into tools callable by
 Codex / Claude Code / Reasonix.
 
-> **Status:** M3 — all 6 MCP tools live. Next: M4 (install script, reports,
-> 5-minute onboarding polish).
+> **Status:** M4 — install script + report generator + docs. MVP complete.
+> 6 tools live, 226 tests passing. Ready for design-partner feedback.
+
+## Quick install
+
+```bash
+cd secagent
+pip install -e ".[mcp]"          # Python ≥3.10 required by the mcp SDK
+bash scripts/install.sh          # downloads subfinder/httpx/nuclei/gitleaks
+pip install theHarvester         # OSINT tool (Python package, not a binary)
+```
+
+For the full 5-minute onboarding flow (install → authorize → scan → report),
+see [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
 ## What M1 provides
 
@@ -92,6 +104,37 @@ MVP ships a pure-stdlib static crawler (`urllib` + regex extractors for
 forms / JS endpoints / emails / suspicious comments). Swappable for pyspider
 in a later milestone without touching the tool function.
 
+## M4 — Install + Reports + Docs
+
+### One-command binary install
+
+`scripts/install.sh` (backed by `secagent.binmgmt.installer`) downloads the
+4 Go binaries pinned in `versions.py`, verifies SHA-256 checksums (skips
+with a warning while checksums are placeholders), extracts, and marks them
+executable. Detects macOS/Linux × amd64/arm64 automatically.
+
+```bash
+bash scripts/install.sh              # install all 4
+python -m secagent.binmgmt.installer --tool nuclei  # install one
+```
+
+### Report generation
+
+`secagent.report` turns tool-call result dicts into human-readable reports:
+
+```python
+from secagent.report import render_markdown, render_json
+
+# engagements = list of tool-call return dicts
+open("report.md", "w").write(render_markdown(engagements))
+open("report.json", "w").write(render_json(engagements))
+```
+
+The Markdown report includes a cross-engagement severity summary, per-tool
+detail sections ordered critical → info, and full evidence for each finding.
+JSON report is a structured document with `report_metadata`, aggregated
+`summary`, and the raw `engagements` array.
+
 ## Install (dev)
 
 ```bash
@@ -121,8 +164,16 @@ See `../docs/superpowers/specs/2026-06-16-secagent-mcp-design.md`.
 
 ```bash
 cd secagent && pytest -v
-# 175 tests pass (M1 compliance + M2a subfinder + M2b MCP server + M3 five tools)
+# 226 tests pass (M1 + M2a + M2b + M3 + M4 installer + report)
 ```
 
 The server application core (`server/app.py`) is tested without the MCP SDK;
 only running the live stdio server requires `pip install -e ".[mcp]"`.
+
+## Docs
+
+- [`docs/QUICKSTART.md`](docs/QUICKSTART.md) — 5-minute install → scan → report
+- [`docs/MCP_SERVER.md`](docs/MCP_SERVER.md) — MCP server wiring, tool contract, troubleshooting
+- [`docs/AUTHORIZATION.md`](docs/AUTHORIZATION.md) — authorization scope + ownership proof
+- [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) — 4 defense lines
+- [`../docs/superpowers/specs/2026-06-16-secagent-mcp-design.md`](../docs/superpowers/specs/2026-06-16-secagent-mcp-design.md) — full design spec

@@ -68,3 +68,12 @@ nul
 
 # Backup files
 *.md.bak
+
+# Local agent workspace state (WorkBuddy / Reasonix) — never commit
+.workbuddy/
+.reasonix/
+
+# SecAgent runtime data
+secagent/data/
+secagent/bin/
+secagent/config.yaml

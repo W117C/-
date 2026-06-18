@@ -20,7 +20,9 @@ import sys
 
 def _import_mcp():
     try:
-        from mcp import Server, types
+        # mcp SDK ≥1.x moved Server into mcp.server; types stays at mcp.types.
+        from mcp.server import Server
+        from mcp import types
         import mcp.server.stdio
     except ImportError as exc:
         sys.stderr.write(

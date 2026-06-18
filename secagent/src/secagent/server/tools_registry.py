@@ -99,8 +99,9 @@ _ENUMERATE_SUBDOMAINS_SCHEMA: dict[str, Any] = {
 def all_tools() -> list[ToolDefinition]:
     """Return every tool currently exposed over MCP.
 
-    M2b ships only `enumerate_subdomains`. M3 will append probe_services,
-    crawl_target, gather_osint, scan_secret_leaks, scan_vulnerabilities here.
+    M3 adds probe_services, gather_osint, scan_secret_leaks, crawl_target.
+    scan_vulnerabilities (nuclei) is wired separately below with its own
+    compliance guard (spec §3.2 ③ 三层防护).
     """
     return [
         ToolDefinition(
@@ -113,4 +114,348 @@ def all_tools() -> list[ToolDefinition]:
             input_schema=_ENUMERATE_SUBDOMAINS_SCHEMA,
             handler=_handle_enumerate_subdomains,
         ),
+        ToolDefinition(
+            name="probe_services",
+            description=(
+                "Probe a list of authorized targets for live HTTP/HTTPS services "
+                "using httpx (read-only — sends benign HTTP requests only). "
+                "Returns Findings of type 'service' with port/protocol/title/"
+                "tech_stack/status_code evidence. Every target must be within "
+                "the authz_token scope; one out-of-scope target refuses the "
+                "whole call."
+            ),
+            input_schema=_PROBE_SERVICES_SCHEMA,
+            handler=_handle_probe_services,
+        ),
+        ToolDefinition(
+            name="gather_osint",
+            description=(
+                "Gather OSINT intelligence (emails, subdomains, hosts) for an "
+                "authorized target from public sources using theHarvester. "
+                "Read-only, no intrusion. Returns Findings of type 'intel'."
+            ),
+            input_schema=_GATHER_OSINT_SCHEMA,
+            handler=_handle_gather_osint,
+        ),
+        ToolDefinition(
+            name="scan_secret_leaks",
+            description=(
+                "Scan an authorized repository (local path or github.com/owner/"
+                "repo) for leaked credentials using gitleaks. Read-only. "
+                "Returns Findings of type 'secret_leak' with severity critical/"
+                "high. Secrets are REDACTED before storage (data-minimization, "
+                "spec §4.3) — only the first/last 4 chars are kept."
+            ),
+            input_schema=_SCAN_SECRET_LEAKS_SCHEMA,
+            handler=_handle_scan_secret_leaks,
+        ),
+        ToolDefinition(
+            name="crawl_target",
+            description=(
+                "Crawl an authorized target URL with a built-in static HTTP "
+                "crawler and extract exposure signals: HTML forms, JS API "
+                "endpoints, email addresses, and suspicious secrets in HTML "
+                "comments. Read-only (GET requests). Returns Findings of type "
+                "'exposure'."
+            ),
+            input_schema=_CRAWL_TARGET_SCHEMA,
+            handler=_handle_crawl_target,
+        ),
+        ToolDefinition(
+            name="scan_vulnerabilities",
+            description=(
+                "Scan authorized targets for known vulnerabilities using nuclei "
+                "(ACTIVE — sends probe packets). Highest compliance risk tool: "
+                "targets are re-validated against the blocklist immediately "
+                "before execution, and a per-target rate limit is enforced. "
+                "Returns Findings of type 'vulnerability' with nuclei-native "
+                "severity. Only run against targets you own and have verified."
+            ),
+            input_schema=_SCAN_VULNERABILITIES_SCHEMA,
+            handler=_handle_scan_vulnerabilities,
+        ),
     ]
+
+
+# ---------------------------------------------------------------------------
+# ② probe_services
+# ---------------------------------------------------------------------------
+
+def _handle_probe_services(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → probe_services tool function (spec §3.2 ②)."""
+    from secagent.tools.probe_services import probe_services
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "targets": args.get("targets", []),
+        "timeout_sec": args.get("timeout_sec", 120),
+    }
+    ports = args.get("ports")
+    if ports:
+        params["ports"] = ports
+    threads = args.get("threads")
+    if threads:
+        params["threads"] = threads
+
+    return probe_services(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_PROBE_SERVICES_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "targets": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "List of domains/IPs to probe (e.g. ['sub.acme.com','1.2.3.4']). "
+                "Every entry must be within the authz_token scope."
+            ),
+        },
+        "authz_token": {
+            "type": "string",
+            "description": "Verified authorization token covering all targets.",
+        },
+        "ports": {
+            "type": "string",
+            "description": "Optional comma-separated port list (e.g. '80,443,8080').",
+        },
+        "threads": {
+            "type": "integer",
+            "description": "Optional httpx thread count.",
+        },
+        "timeout_sec": {"type": "integer", "default": 120},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["targets", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ④ gather_osint
+# ---------------------------------------------------------------------------
+
+def _handle_gather_osint(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → gather_osint tool function (spec §3.2 ④)."""
+    from secagent.tools.gather_osint import gather_osint
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "target": args.get("target", ""),
+        "timeout_sec": args.get("timeout_sec", 120),
+    }
+    data_types = args.get("data_types")
+    if data_types:
+        params["data_types"] = data_types
+
+    return gather_osint(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_GATHER_OSINT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "string",
+            "description": (
+                "Domain or email to gather OSINT on (e.g. 'acme.com'). "
+                "Must be within the authz_token scope."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "data_types": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Optional filter: ['emails','subdomains','hosts','usernames'].",
+        },
+        "timeout_sec": {"type": "integer", "default": 120},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["target", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑤ scan_secret_leaks
+# ---------------------------------------------------------------------------
+
+def _handle_scan_secret_leaks(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → scan_secret_leaks tool function (spec §3.2 ⑤)."""
+    from secagent.tools.scan_secret_leaks import scan_secret_leaks
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "scope": args.get("scope", ""),
+        "timeout_sec": args.get("timeout_sec", 120),
+    }
+    mode = args.get("mode")
+    if mode:
+        params["mode"] = mode
+
+    return scan_secret_leaks(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_SCAN_SECRET_LEAKS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "scope": {
+            "type": "string",
+            "description": (
+                "Repository to scan: local path ('/path/to/repo') or "
+                "'github.com/owner/repo'. Must be within the authz_token's "
+                "REPO scope."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "mode": {
+            "type": "string",
+            "default": "github",
+            "description": "MVP only supports 'github' (local repo scan).",
+        },
+        "timeout_sec": {"type": "integer", "default": 120},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["scope", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑥ crawl_target
+# ---------------------------------------------------------------------------
+
+def _handle_crawl_target(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → crawl_target tool function (spec §3.2 ⑥)."""
+    from secagent.tools.crawl_target import crawl_target
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "target": args.get("target", ""),
+        "timeout_sec": args.get("timeout_sec", 30),
+    }
+    for opt in ("depth", "mode", "extract", "respect_robots"):
+        if args.get(opt) is not None:
+            params[opt] = args[opt]
+
+    return crawl_target(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_CRAWL_TARGET_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "string",
+            "description": (
+                "Absolute URL to crawl (e.g. 'https://acme.com'). The host "
+                "must be within the authz_token's DOMAIN scope."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "depth": {
+            "type": "integer",
+            "default": 1,
+            "description": "Crawl depth. MVP supports depth=1 (single page) only.",
+        },
+        "mode": {
+            "type": "string",
+            "default": "static",
+            "description": "MVP only supports 'static' (no JS rendering).",
+        },
+        "extract": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "What to extract: ['forms','js_endpoints','emails','comments'].",
+        },
+        "respect_robots": {"type": "boolean", "default": True},
+        "timeout_sec": {"type": "integer", "default": 30},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["target", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ③ scan_vulnerabilities (nuclei) — highest risk, three-layer guard
+# ---------------------------------------------------------------------------
+
+def _handle_scan_vulnerabilities(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → scan_vulnerabilities tool function (spec §3.2 ③).
+
+    This handler adds a THIRD compliance layer on top of the gate: a final
+    blocklist re-check immediately before nuclei runs (defense in depth,
+    spec §3.2 ③ 三层合规防护). The tool function itself also enforces a
+    per-target rate limit.
+    """
+    from secagent.tools.scan_vulnerabilities import scan_vulnerabilities
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "targets": args.get("targets", []),
+        "timeout_sec": args.get("timeout_sec", 600),
+    }
+    for opt in ("templates", "severity_filter", "rate_limit"):
+        if args.get(opt) is not None:
+            params[opt] = args[opt]
+
+    return scan_vulnerabilities(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_SCAN_VULNERABILITIES_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "targets": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Targets to scan (domains/URLs). Every target must be within "
+                "the authz_token scope AND pass the blocklist. Nuclei sends "
+                "ACTIVE probe packets — only scan assets you own."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "templates": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Nuclei template categories (e.g. ['cves','exposures']).",
+        },
+        "severity_filter": {
+            "type": "string",
+            "description": "Only report findings >= this severity (critical/high/medium/low/info).",
+        },
+        "rate_limit": {
+            "type": "integer",
+            "default": 150,
+            "description": "Max requests/sec to each target (spec §4.2 nuclei_rate_limit).",
+        },
+        "timeout_sec": {"type": "integer", "default": 600},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["targets", "authz_token"],
+}

@@ -4,8 +4,8 @@ Security MCP server that wraps **SuperSpider** + open-source tooling
 (Nuclei/Subfinder/httpx/gitleaks/theHarvester) into tools callable by
 Codex / Claude Code / Reasonix.
 
-> **Status:** M1 — compliance skeleton. No tools connected yet. Tool adapters
-> arrive in M2+.
+> **Status:** M2a — subfinder adapter closed loop. MCP server shell is M2b
+> (pending Python ≥3.10 upgrade).
 
 ## What M1 provides
 
@@ -14,6 +14,18 @@ The 4-line compliance defense, runnable independently:
 - **Defense line 2** — blocklist (gov TLDs, private IPs, custom domains)
 - **Defense line 3** — data minimization (schema + retention hooks)
 - **Defense line 4** — append-only, hash-chained audit log
+
+## M2a — Subfinder Adapter
+
+The first tool is wired end-to-end:
+
+- **`enumerate_subdomains`** — calls subfinder via subprocess adapter,
+  parses JSON output into unified Findings, passes through compliance gate
+  (auth + blocklist + audit + quota).
+
+The tool function (`secagent/tools/enumerate_subdomains.py`) is the boundary
+between the adapter layer and the future MCP server. It can be called
+directly in tests without MCP.
 
 ## Install (dev)
 

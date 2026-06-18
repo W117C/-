@@ -40,5 +40,6 @@ class Config:
             max_concurrent_per_target=comp_block.get("max_concurrent_per_target", 5),
             nuclei_rate_limit=comp_block.get("nuclei_rate_limit", 150),
             finding_ttl_days=ret_block.get("finding_ttl_days", 90),
-            binaries_dir=tools_block.get("binaries_dir", "./bin"),
+            binaries_dir=os.environ.get(
+                "SECAGENT_BINARIES_DIR", tools_block.get("binaries_dir", "./bin")),
         )

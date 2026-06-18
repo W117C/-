@@ -117,7 +117,17 @@ def build_download_url(tool_name: str, os_name: str | None = None, arch: str | N
 
 
 def _default_downloader(url: str, dest: str) -> None:
-    urllib.request.urlretrieve(url, dest)
+    """Download url → dest with a 120s timeout (prevents indefinite hangs).
+
+    Uses urllib with an explicit socket timeout so a stalled connection
+    (common behind restrictive networks) fails fast instead of hanging
+    the installer forever.
+    """
+    import socket
+    req = urllib.request.Request(url, headers={"User-Agent": "SecAgent-installer/1.0"})
+    with urllib.request.urlopen(req, timeout=120) as resp, open(dest, "wb") as f:
+        # urlretrieve follows redirects automatically; urlopen does too.
+        shutil.copyfileobj(resp, f, length=64 * 1024)
 
 
 def download_file(url: str, dest_path: str, downloader=None) -> str:

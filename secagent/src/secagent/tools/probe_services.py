@@ -13,6 +13,7 @@ Contract:
 """
 from __future__ import annotations
 
+import os
 import uuid
 from typing import Any
 
@@ -54,7 +55,11 @@ def probe_services(
         )
 
     # Execute: adapter
-    adapter = HttpxAdapter(launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)))
+    binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
+    adapter = HttpxAdapter(
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        binaries_dir=binaries_dir,
+    )
     findings = adapter.run(params)
 
     # Post-run: commit findings + decrement quota (one unit per call)

@@ -77,3 +77,4 @@ nul
 secagent/data/
 secagent/bin/
 secagent/config.yaml
+secagent/demo-report.*

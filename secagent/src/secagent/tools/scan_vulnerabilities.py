@@ -24,6 +24,7 @@ Contract (same as every other tool function):
 """
 from __future__ import annotations
 
+import os
 import uuid
 from typing import Any
 from urllib.parse import urlparse
@@ -102,8 +103,10 @@ def scan_vulnerabilities(
     safe_params["rate_limit"] = max(1, min(requested_rate, 500))
 
     # --- Execute: adapter -------------------------------------------------
+    binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = NucleiAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 600))
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 600)),
+        binaries_dir=binaries_dir,
     )
     findings = adapter.run(safe_params)
 

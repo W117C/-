@@ -14,6 +14,8 @@ Nuclei JSON output (one object per line, -jsonl):
 from __future__ import annotations
 
 import json
+import os
+import sys
 import uuid
 import datetime as dt
 from typing import Any
@@ -34,6 +36,25 @@ _NUCLEI_SEVERITY_MAP: dict[str, Severity] = {
     "info": Severity.INFO,
     "unknown": Severity.INFO,
 }
+
+
+def _default_templates_dir() -> str:
+    """Resolve the nuclei templates directory when no -t is passed.
+
+    Precedence: NUCLEI_TEMPLATES_DIR env var, then a per-platform default,
+    so the adapter behaves the same across macOS and Linux MCP hosts. Nuclei
+    itself falls back to ~/.local/nuclei-templates when -t is omitted, but we
+    pass an explicit path so an env override is always honoured.
+    """
+    env = os.environ.get("NUCLEI_TEMPLATES_DIR")
+    if env:
+        return env
+    if sys.platform == "darwin":
+        return os.path.join(
+            os.path.expanduser("~/Library/Application Support/nuclei"),
+            "nuclei-templates",
+        )
+    return os.path.expanduser("~/.local/nuclei-templates")
 
 
 class NucleiAdapter(BaseAdapter):
@@ -78,6 +99,12 @@ class NucleiAdapter(BaseAdapter):
             templates = params.get("templates")
             if templates:
                 cmd.extend(["-t", ",".join(templates)])
+            else:
+                # Default templates: NUCLEI_TEMPLATES_DIR env, else a per-platform
+                # default. nuclei itself defaults to ~/.local/nuclei-templates if
+                # -t is omitted, but we pass an explicit path so the env override
+                # is honoured and the run is deterministic across hosts.
+                cmd.extend(["-t", _default_templates_dir()])
             severity_filter = params.get("severity_filter")
             if severity_filter:
                 cmd.extend(["-severity", severity_filter])

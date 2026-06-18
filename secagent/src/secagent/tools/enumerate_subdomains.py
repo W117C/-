@@ -12,6 +12,7 @@ Contract:
 from __future__ import annotations
 
 import datetime as dt
+import os
 import uuid
 from typing import Any
 
@@ -44,7 +45,11 @@ def enumerate_subdomains(
     )
 
     # Execute: adapter
-    adapter = SubfinderAdapter(launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)))
+    binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
+    adapter = SubfinderAdapter(
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        binaries_dir=binaries_dir,
+    )
     findings = adapter.run(params)
 
     # Post-run: commit findings + decrement quota

@@ -16,6 +16,7 @@ Contract:
 """
 from __future__ import annotations
 
+import os
 import uuid
 from typing import Any
 
@@ -53,8 +54,10 @@ def gather_osint(
     )
 
     # Execute: adapter
+    binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = TheHarvesterAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120))
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        binaries_dir=binaries_dir,
     )
     findings = adapter.run(params)
 

@@ -78,3 +78,5 @@ secagent/data/
 secagent/bin/
 secagent/config.yaml
 secagent/demo-report.*
+secagent/vendor/
+secagent/.flake8

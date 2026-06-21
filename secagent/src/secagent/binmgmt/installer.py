@@ -20,7 +20,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-from secagent.binmgmt.versions import get_tool_version, known_tools
+from secagent.binmgmt.versions import get_tool_version
 from secagent.core.errors import InvalidInputError, ToolFailedError
 
 # The 4 Go binaries that this installer knows how to fetch.
@@ -123,7 +123,6 @@ def _default_downloader(url: str, dest: str) -> None:
     (common behind restrictive networks) fails fast instead of hanging
     the installer forever.
     """
-    import socket
     req = urllib.request.Request(url, headers={"User-Agent": "SecAgent-installer/1.0"})
     with urllib.request.urlopen(req, timeout=120) as resp, open(dest, "wb") as f:
         # urlretrieve follows redirects automatically; urlopen does too.

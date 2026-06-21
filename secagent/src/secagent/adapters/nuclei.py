@@ -81,7 +81,8 @@ class NucleiAdapter(BaseAdapter):
 
         # nuclei accepts targets via -u (single) or -l <file>. For a list we
         # write a temp file so a single subprocess run covers all targets.
-        import tempfile, os
+        import tempfile
+        import os
         tmp = tempfile.NamedTemporaryFile(
             mode="w", suffix=".txt", delete=False, encoding="utf-8"
         )

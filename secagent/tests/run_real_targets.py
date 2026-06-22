@@ -251,7 +251,6 @@ def test_attack_surface_scan_full(gate, token, target):
 
 def run_all_tests():
     all_results = {}
-    errors = []
 
     for name, domain in TEST_TARGETS.items():
         print(f"\n\n{'#'*70}")

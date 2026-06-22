@@ -19,6 +19,7 @@ from secagent.adapters.base import BaseAdapter
 from secagent.binmgmt.versions import get_tool_version
 from secagent.binmgmt.launcher import Launcher, LaunchResult
 from secagent.core.finding import Finding, FindingType, Severity
+from secagent.core.waf_detect import detect_waf_from_raw
 
 
 class HttpxAdapter(BaseAdapter):
@@ -40,7 +41,7 @@ class HttpxAdapter(BaseAdapter):
             raise InvalidInputError(field="targets", reason="must be a non-empty list")
 
         tool_info = get_tool_version(self.tool_name)
-        binary = f"{self._binaries_dir}/{tool_info['binary_name']}"
+        binary = os.path.join(self._binaries_dir, tool_info['binary_name'])
 
         # Write targets to a temp file so httpx reads them via -l (single
         # subprocess call regardless of target count).
@@ -93,8 +94,11 @@ class HttpxAdapter(BaseAdapter):
             tech = obj.get("tech", []) or []
             webserver = obj.get("webserver", "")
 
+            # Detect WAF/CDN from raw response headers
+            waf_info = detect_waf_from_raw(obj)
+
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.SERVICE,
                 severity=Severity.INFO,
                 target=host,
@@ -106,6 +110,8 @@ class HttpxAdapter(BaseAdapter):
                     "title": title,
                     "tech_stack": tech,
                     "status_code": status_code,
+                    "input_host": obj.get("input", ""),
+                    "waf": waf_info if waf_info else None,
                 },
                 source_tool=self.tool_name,
                 raw=obj,

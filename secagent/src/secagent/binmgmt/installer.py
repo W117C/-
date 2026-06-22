@@ -23,8 +23,8 @@ from pathlib import Path
 from secagent.binmgmt.versions import get_tool_version
 from secagent.core.errors import InvalidInputError, ToolFailedError
 
-# The 4 Go binaries that this installer knows how to fetch.
-GO_BINARIES = {"subfinder", "httpx", "nuclei", "gitleaks"}
+# The 6 Go binaries that this installer knows how to fetch.
+GO_BINARIES = {"subfinder", "httpx", "nuclei", "gitleaks", "naabu", "ffuf"}
 
 # URL templates. projectdiscovery ships .zip; gitleaks ships .tar.gz.
 # {os} is substituted as 'macOS' / 'Linux' (projectdiscovery style) for the
@@ -34,6 +34,8 @@ _URL_TEMPLATES = {
     "httpx": "https://github.com/projectdiscovery/httpx/releases/download/v{ver}/httpx_{ver}_{os}_{arch}.zip",
     "nuclei": "https://github.com/projectdiscovery/nuclei/releases/download/v{ver}/nuclei_{ver}_{os}_{arch}.zip",
     "gitleaks": "https://github.com/gitleaks/gitleaks/releases/download/v{ver}/gitleaks_{ver}_{os}_{arch}.tar.gz",
+    "naabu": "https://github.com/projectdiscovery/naabu/releases/download/v{ver}/naabu_{ver}_{os}_{arch}.zip",
+    "ffuf": "https://github.com/ffuf/ffuf/releases/download/v{ver}/ffuf_{ver}_{os}_{arch}.tar.gz",
 }
 
 # Translate our internal os_name to the os token each vendor uses in URLs.
@@ -42,6 +44,8 @@ _OS_TOKEN = {
     "httpx": {"macOS": "macOS", "Linux": "Linux"},
     "nuclei": {"macOS": "macOS", "Linux": "Linux"},
     "gitleaks": {"macOS": "darwin", "Linux": "linux"},
+    "naabu": {"macOS": "macOS", "Linux": "Linux"},
+    "ffuf": {"macOS": "macos", "Linux": "linux"},
 }
 
 
@@ -149,17 +153,9 @@ def download_file(url: str, dest_path: str, downloader=None) -> str:
 def verify_checksum(file_path: str, expected_sha256: str) -> bool:
     """Verify SHA256 of a file.
 
-    If `expected` starts with 'placeholder', print a warning to stderr and
-    skip verification (MVP pragmatic mode). Otherwise compute the file's
-    SHA256 and return True on match, False on mismatch.
+    Computes the file's SHA-256 digest and returns True on match,
+    False on mismatch. Raises FileNotFoundError if the file does not exist.
     """
-    if expected_sha256.startswith("placeholder"):
-        print(
-            f"warning: checksum for {file_path} is a placeholder; skipping verification",
-            file=sys.stderr,
-        )
-        return True
-
     import hashlib
 
     h = hashlib.sha256()
@@ -249,7 +245,7 @@ def install_tool(tool_name: str, binaries_dir: str = "./bin", downloader=None) -
 
 
 def install_all(binaries_dir: str = "./bin", downloader=None) -> dict:
-    """Install all 4 Go binaries. Returns {tool: {"ok": bool, "path": str, "error": str}}.
+    """Install all Go binaries. Returns {tool: {"ok": bool, "path": str, "error": str}}.
 
     A single tool failing does NOT abort the others; the error is recorded and
     the loop continues.
@@ -265,7 +261,9 @@ def install_all(binaries_dir: str = "./bin", downloader=None) -> dict:
 
 
 def _suffix_for(tool_name: str) -> str:
-    return ".zip" if tool_name != "gitleaks" else ".tar.gz"
+    if tool_name in ("gitleaks", "ffuf"):
+        return ".tar.gz"
+    return ".zip"
 
 
 def _print_results_table(results: dict) -> None:

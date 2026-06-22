@@ -10,7 +10,8 @@ from secagent.storage.sqlite_store import SQLiteStore
 
 
 def _setup(tmp_db, scope_domain="acme.com"):
-    store = SQLiteStore(tmp_db); store.bootstrap()
+    store = SQLiteStore(tmp_db)
+    store.bootstrap()
     reg = AuthorizationRegistry(store, default_quota=5)
     token = reg.issue(scope=AuthorizationScope(ScopeType.DOMAIN, scope_domain))
     reg.mark_verified(token, method="dns_txt")
@@ -37,7 +38,8 @@ def test_gate_rejects_blocked_target_even_if_in_scope(tmp_db: str):
 
 
 def test_gate_requires_verified_token(tmp_db: str):
-    store = SQLiteStore(tmp_db); store.bootstrap()
+    store = SQLiteStore(tmp_db)
+    store.bootstrap()
     reg = AuthorizationRegistry(store, default_quota=5)
     token = reg.issue(scope=AuthorizationScope(ScopeType.DOMAIN, "acme.com"))  # NOT verified
     gate = ComplianceGate(store, reg.quota, default_quota=5)

@@ -19,6 +19,8 @@ class FindingType(str, Enum):
     EXPOSURE = "exposure"
     INTEL = "intel"
     SECRET_LEAK = "secret_leak"
+    OPEN_PORT = "open_port"
+    EXPOSED_PATH = "exposed_path"
 
 
 class Severity(str, Enum):

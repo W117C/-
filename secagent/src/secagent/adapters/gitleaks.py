@@ -10,6 +10,7 @@ redacted before they enter a Finding — never store raw plaintext).
 from __future__ import annotations
 
 import json
+import os
 import uuid
 import datetime as dt
 from typing import Any
@@ -71,7 +72,7 @@ class GitleaksAdapter(BaseAdapter):
             raise InvalidInputError(field="mode", reason=f"unsupported mode '{mode}'; MVP supports only 'github'")
 
         tool_info = get_tool_version(self.tool_name)
-        binary = f"{self._binaries_dir}/{tool_info['binary_name']}"
+        binary = os.path.join(self._binaries_dir, tool_info['binary_name'])
 
         cmd: list[str] = [
             binary,
@@ -162,7 +163,7 @@ class GitleaksAdapter(BaseAdapter):
             title = f"Secret leak: {rule_id} in {file_path}:{line_no}"
 
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.SECRET_LEAK,
                 severity=_severity_for_rule(rule_id),
                 target=scope,

@@ -51,7 +51,15 @@ def enumerate_subdomains(
     )
     findings = adapter.run(params)
 
-    # Post-run: commit findings + decrement quota
+    # Build response
+    engagement_id = f"eng_{uuid.uuid4().hex}"
+
+    # Tag findings with engagement_id for persistence
+    findings_dicts = [f.to_dict() for f in findings]
+    for fd in findings_dicts:
+        fd["engagement_id"] = engagement_id
+
+    # Post-run: commit findings + decrement quota (also persists to findings table)
     gate.commit_findings(
         token=authz_token,
         count=len(findings),
@@ -60,11 +68,11 @@ def enumerate_subdomains(
         tool=tool_name,
         target=target_domain,
         scope_value=scope.value,
+        findings=findings_dicts,
     )
 
-    # Build response
     return {
-        "engagement_id": f"eng_{uuid.uuid4().hex[:8]}",
+        "engagement_id": engagement_id,
         "tool": tool_name,
         "findings": [f.to_dict() for f in findings],
         "summary": {

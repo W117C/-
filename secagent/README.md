@@ -90,6 +90,14 @@ adds two extra defense layers on top of the standard gate:
 3. **Layer 3 — rate-limit clamp** (`-rate-limit`), clamped to `[1, 500]` so a
    caller cannot accidentally DoS their own asset.
 
+### `attack_surface_scan` — wider vulnerability discovery
+
+For broader coverage, submit `attack_surface_scan` through `submit_scan`.
+It chains the existing gated tools: subdomain enumeration → live service
+probing → nuclei scan of discovered HTTP services. The active nuclei phase is
+capped by `max_scan_targets` (default `25`) and every phase still uses the
+same authz, blocklist, audit, and quota controls.
+
 ### `scan_secret_leaks` — data minimization (spec §4.3)
 
 Secrets are **redacted** before they ever reach a Finding: only the first 4

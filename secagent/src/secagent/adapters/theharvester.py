@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import uuid
 from typing import Any
 
@@ -58,7 +59,7 @@ class TheHarvesterAdapter(BaseAdapter):
             raise InvalidInputError(field="target", reason="must be a non-empty string")
 
         tool_info = get_tool_version(self.tool_name)
-        binary = f"{self._binaries_dir}/{tool_info['binary_name']}"
+        binary = os.path.join(self._binaries_dir, tool_info['binary_name'])
 
         cmd: list[str] = [binary, "-d", target, "-b", "all", "-f", "json"]
 
@@ -103,7 +104,7 @@ class TheHarvesterAdapter(BaseAdapter):
                     continue
                 findings.append(
                     Finding(
-                        id=f"fnd_{uuid.uuid4().hex[:8]}",
+                        id=f"fnd_{uuid.uuid4().hex}",
                         type=FindingType.INTEL,
                         severity=Severity.INFO,
                         target=value,

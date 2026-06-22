@@ -4,27 +4,15 @@ from __future__ import annotations
 import pytest
 
 from secagent.adapters.simple_crawler import SimpleCrawlerAdapter
-from secagent.core.authz import AuthorizationScope, ScopeType
 from secagent.core.errors import InvalidInputError, NotAuthorizedError, ToolFailedError
 from secagent.core.finding import FindingType, Severity
-from secagent.core.gate import ComplianceGate
-from secagent.core.registry import AuthorizationRegistry
-from secagent.storage.sqlite_store import SQLiteStore
 from secagent.tools.crawl_target import crawl_target
+from helper import setup_gate_and_token
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _setup_gate_and_token(tmp_db, scope_domain="acme.com"):
-    store = SQLiteStore(tmp_db); store.bootstrap()
-    reg = AuthorizationRegistry(store, default_quota=100)
-    token = reg.issue(scope=AuthorizationScope(ScopeType.DOMAIN, scope_domain))
-    reg.mark_verified(token, method="dns_txt")
-    gate = ComplianceGate(store, reg.quota, default_quota=100)
-    return gate, token
-
 
 def _make_adapter(html: str, timeout_sec: int = 5) -> SimpleCrawlerAdapter:
     """Build an adapter with a fetcher that returns the supplied HTML."""
@@ -259,7 +247,7 @@ def test_adapter_all_findings_are_exposure_from_simple_crawler():
 # ---------------------------------------------------------------------------
 
 def test_tool_returns_findings_for_authorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
 
     from unittest.mock import patch, MagicMock
     from secagent.core.finding import Finding
@@ -296,7 +284,7 @@ def test_tool_returns_findings_for_authorized_target(tmp_db):
 
 
 def test_tool_rejects_unauthorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     with pytest.raises(NotAuthorizedError):
         crawl_target(
             gate=gate,
@@ -307,7 +295,7 @@ def test_tool_rejects_unauthorized_target(tmp_db):
 
 
 def test_tool_missing_target_raises_invalid_input(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     # The tool extracts host = "" (urlparse of empty), gate.check on "" is
     # not in scope "acme.com" -> NotAuthorizedError fires before adapter
     # validation. To exercise InvalidInputError we need an in-scope host but
@@ -325,7 +313,7 @@ def test_tool_missing_target_raises_invalid_input(tmp_db):
 
 def test_tool_end_to_end_with_real_adapter(tmp_db):
     """End-to-end: real adapter with a mock fetcher, real gate, real findings."""
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     html = (
         '<form action="/login" method="post"></form>'
         '<script>fetch("/api/users")</script>'

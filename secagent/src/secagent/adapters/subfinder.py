@@ -8,6 +8,7 @@ Spec: §3.2 ① enumerate_subdomains, §5.2 (binary dependency strategy).
 from __future__ import annotations
 
 import json
+import os
 import uuid
 import datetime as dt
 from typing import Any
@@ -37,7 +38,7 @@ class SubfinderAdapter(BaseAdapter):
             raise InvalidInputError(field="target_domain", reason="must be a non-empty string")
 
         tool_info = get_tool_version(self.tool_name)
-        binary = f"{self._binaries_dir}/{tool_info['binary_name']}"
+        binary = os.path.join(self._binaries_dir, tool_info['binary_name'])
 
         cmd: list[str] = [binary, "-d", domain, "-json", "-silent"]
 
@@ -70,7 +71,7 @@ class SubfinderAdapter(BaseAdapter):
             if not host:
                 continue
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.SUBDOMAIN,
                 severity=Severity.INFO,
                 target=host,

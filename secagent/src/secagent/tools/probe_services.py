@@ -62,6 +62,12 @@ def probe_services(
     )
     findings = adapter.run(params)
 
+    # Build response
+    engagement_id = f"eng_{uuid.uuid4().hex}"
+    findings_dicts = [f.to_dict() for f in findings]
+    for fd in findings_dicts:
+        fd["engagement_id"] = engagement_id
+
     # Post-run: commit findings + decrement quota (one unit per call)
     gate.commit_findings(
         token=authz_token,
@@ -71,10 +77,11 @@ def probe_services(
         tool=tool_name,
         target=",".join(targets),
         scope_value=last_scope.value if last_scope else None,
+        findings=findings_dicts,
     )
 
     return {
-        "engagement_id": f"eng_{uuid.uuid4().hex[:8]}",
+        "engagement_id": engagement_id,
         "tool": tool_name,
         "findings": [f.to_dict() for f in findings],
         "summary": Finding.summary(findings),

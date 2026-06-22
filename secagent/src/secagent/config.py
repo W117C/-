@@ -4,8 +4,11 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
+
+from secagent.core.proxy import ProxyConfig
 
 
 @dataclass
@@ -17,6 +20,8 @@ class Config:
     nuclei_rate_limit: int = 150
     finding_ttl_days: int = 90
     binaries_dir: str = "./bin"
+    wordlists_dir: str = "./wordlists"
+    proxy: ProxyConfig = field(default_factory=ProxyConfig)
     extra: dict = field(default_factory=dict)
 
     @classmethod
@@ -31,6 +36,21 @@ class Config:
         comp_block = data.get("compliance", {})
         ret_block = data.get("retention", {})
         tools_block = data.get("tools", {})
+        proxy_block = data.get("proxy", {})
+
+        # Build ProxyConfig from yaml proxy block
+        proxy_cfg = ProxyConfig(
+            enabled=proxy_block.get("enabled", False),
+            proxy_url=proxy_block.get("proxy_url", ""),
+            pool=proxy_block.get("pool", []) if isinstance(proxy_block.get("pool"), list) else [],
+            strategy=proxy_block.get("strategy", "round_robin"),
+            health_check_interval=int(proxy_block.get("health_check_interval", 0)),
+        )
+        # Override with env var if set (simple setups)
+        env_proxy = os.environ.get("ALL_PROXY") or os.environ.get("HTTP_PROXY") or ""
+        if env_proxy and not proxy_cfg.enabled:
+            proxy_cfg.enabled = True
+            proxy_cfg.proxy_url = env_proxy
 
         return cls(
             db_path=db_path,
@@ -42,4 +62,7 @@ class Config:
             finding_ttl_days=ret_block.get("finding_ttl_days", 90),
             binaries_dir=os.environ.get(
                 "SECAGENT_BINARIES_DIR", tools_block.get("binaries_dir", "./bin")),
+            wordlists_dir=os.environ.get(
+                "SECAGENT_WORDLISTS_DIR", tools_block.get("wordlists_dir", "./wordlists")),
+            proxy=proxy_cfg,
         )

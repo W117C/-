@@ -4,10 +4,9 @@ import json
 import datetime as dt
 from unittest.mock import patch, MagicMock
 
-import pytest
 
 from secagent.adapters.subfinder import SubfinderAdapter
-from secagent.core.finding import Finding, FindingType, Severity
+from secagent.core.finding import FindingType, Severity
 
 
 def _mock_launcher(stdout_lines: list[str], returncode: int = 0):

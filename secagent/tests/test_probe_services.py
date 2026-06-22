@@ -6,13 +6,10 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from secagent.adapters.httpx_adapter import HttpxAdapter
-from secagent.core.authz import AuthorizationScope, ScopeType
 from secagent.core.errors import InvalidInputError, NotAuthorizedError
 from secagent.core.finding import Finding, FindingType, Severity
-from secagent.core.gate import ComplianceGate
-from secagent.core.registry import AuthorizationRegistry
-from secagent.storage.sqlite_store import SQLiteStore
 from secagent.tools.probe_services import probe_services
+from helper import setup_gate_and_token
 
 
 # ---------- helpers ----------
@@ -26,15 +23,6 @@ def _mock_launcher(stdout_lines: list[str], returncode: int = 0):
     mock_result.stderr = ""
     mock_result.json_output = None  # launcher will try json.loads
     return mock_result
-
-
-def _setup_gate_and_token(tmp_db, scope_domain="acme.com"):
-    store = SQLiteStore(tmp_db); store.bootstrap()
-    reg = AuthorizationRegistry(store, default_quota=100)
-    token = reg.issue(scope=AuthorizationScope(ScopeType.DOMAIN, scope_domain))
-    reg.mark_verified(token, method="dns_txt")
-    gate = ComplianceGate(store, reg.quota, default_quota=100)
-    return gate, token
 
 
 def _httpx_line(**overrides):
@@ -157,7 +145,7 @@ def test_adapter_rejects_non_list_targets():
 # ==================== Tool function tests ====================
 
 def test_tool_returns_findings_for_authorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db)
     with patch("secagent.tools.probe_services.HttpxAdapter") as MockAdapter:
         mock_instance = MagicMock()
         mock_instance.run.return_value = [
@@ -181,7 +169,7 @@ def test_tool_returns_findings_for_authorized_target(tmp_db):
 
 
 def test_tool_rejects_unauthorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     with pytest.raises(NotAuthorizedError):
         probe_services(
             gate=gate,
@@ -192,7 +180,7 @@ def test_tool_rejects_unauthorized_target(tmp_db):
 
 
 def test_tool_rejects_empty_targets(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db)
     with pytest.raises(InvalidInputError):
         probe_services(
             gate=gate,
@@ -203,7 +191,7 @@ def test_tool_rejects_empty_targets(tmp_db):
 
 
 def test_tool_rejects_when_any_target_out_of_scope(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     # sub.acme.com is in scope, evil.com is not — entire call must refuse
     # before the adapter runs.
     with patch("secagent.tools.probe_services.HttpxAdapter") as MockAdapter:
@@ -219,7 +207,7 @@ def test_tool_rejects_when_any_target_out_of_scope(tmp_db):
 
 
 def test_tool_empty_result_still_commits(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db)
     with patch("secagent.tools.probe_services.HttpxAdapter") as MockAdapter:
         mock_instance = MagicMock()
         mock_instance.run.return_value = []
@@ -237,7 +225,7 @@ def test_tool_empty_result_still_commits(tmp_db):
 
 
 def test_tool_multiple_in_scope_targets_all_pass(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     with patch("secagent.tools.probe_services.HttpxAdapter") as MockAdapter:
         mock_instance = MagicMock()
         mock_instance.run.return_value = [

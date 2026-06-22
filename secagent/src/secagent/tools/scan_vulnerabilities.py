@@ -110,6 +110,12 @@ def scan_vulnerabilities(
     )
     findings = adapter.run(safe_params)
 
+    # Build response
+    engagement_id = f"eng_{uuid.uuid4().hex}"
+    findings_dicts = [f.to_dict() for f in findings]
+    for fd in findings_dicts:
+        fd["engagement_id"] = engagement_id
+
     # --- Post-run: commit findings + decrement quota ----------------------
     gate.commit_findings(
         token=authz_token,
@@ -119,10 +125,11 @@ def scan_vulnerabilities(
         tool=tool_name,
         target=",".join(targets),
         scope_value=scopes[0].value if scopes else None,
+        findings=findings_dicts,
     )
 
     return {
-        "engagement_id": f"eng_{uuid.uuid4().hex[:8]}",
+        "engagement_id": engagement_id,
         "tool": tool_name,
         "findings": [f.to_dict() for f in findings],
         "summary": Finding.summary(findings),

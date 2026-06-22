@@ -21,16 +21,19 @@ class AuthorizationRecord:
     token: str
     scope: AuthorizationScope
     verified: bool
+    revoked: bool
     created_at: str
     note: str | None
 
 
 def _row_to_record(row) -> AuthorizationRecord:
-    token, scope_type, scope_value, verified, created_at, note = row
+    token, scope_type, scope_value, verified, created_at, note = row[:6]
+    revoked = bool(row[6]) if len(row) > 6 else False
     return AuthorizationRecord(
         token=token,
         scope=AuthorizationScope(ScopeType(scope_type), scope_value),
         verified=bool(verified),
+        revoked=revoked,
         created_at=created_at,
         note=note,
     )
@@ -56,6 +59,15 @@ class AuthorizationRegistry:
         self.quota.ensure(token)
         return token
 
+    def revoke(self, token: str) -> None:
+        """Revoke an authorization token, preventing future use."""
+        conn = self.store._connect()
+        try:
+            conn.execute("UPDATE authorizations SET revoked=1 WHERE token=?", (token,))
+            conn.commit()
+        finally:
+            conn.close()
+
     def mark_verified(self, token: str, method: str) -> None:
         conn = self.store._connect()
         try:
@@ -68,7 +80,7 @@ class AuthorizationRegistry:
         conn = self.store._connect()
         try:
             row = conn.execute(
-                "SELECT token, scope_type, scope_value, verified, created_at, note FROM authorizations WHERE token=?",
+                "SELECT token, scope_type, scope_value, verified, created_at, note, revoked FROM authorizations WHERE token=?",
                 (token,),
             ).fetchone()
         finally:
@@ -79,7 +91,7 @@ class AuthorizationRegistry:
         conn = self.store._connect()
         try:
             rows = conn.execute(
-                "SELECT token, scope_type, scope_value, verified, created_at, note FROM authorizations ORDER BY created_at"
+                "SELECT token, scope_type, scope_value, verified, created_at, note, revoked FROM authorizations ORDER BY created_at"
             ).fetchall()
         finally:
             conn.close()

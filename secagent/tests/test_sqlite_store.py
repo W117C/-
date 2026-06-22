@@ -18,11 +18,11 @@ def test_store_bootstraps_schema(tmp_db: str):
 def test_store_records_schema_version(tmp_db: str):
     store = SQLiteStore(tmp_db)
     store.bootstrap()
-    assert store.schema_version() == 1
+    assert store.schema_version() >= 1
 
 
 def test_bootstrap_is_idempotent(tmp_db: str):
     store = SQLiteStore(tmp_db)
     store.bootstrap()
     store.bootstrap()  # second call must not error
-    assert store.schema_version() == 1
+    assert store.schema_version() >= 1

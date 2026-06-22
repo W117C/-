@@ -77,12 +77,11 @@ class NucleiAdapter(BaseAdapter):
             )
 
         tool_info = get_tool_version(self.tool_name)
-        binary = f"{self._binaries_dir}/{tool_info['binary_name']}"
+        binary = os.path.join(self._binaries_dir, tool_info['binary_name'])
 
         # nuclei accepts targets via -u (single) or -l <file>. For a list we
         # write a temp file so a single subprocess run covers all targets.
         import tempfile
-        import os
         tmp = tempfile.NamedTemporaryFile(
             mode="w", suffix=".txt", delete=False, encoding="utf-8"
         )
@@ -146,7 +145,7 @@ class NucleiAdapter(BaseAdapter):
                 continue
             findings.append(
                 Finding(
-                    id=f"fnd_{uuid.uuid4().hex[:8]}",
+                    id=f"fnd_{uuid.uuid4().hex}",
                     type=FindingType.VULNERABILITY,
                     severity=severity,
                     target=host,

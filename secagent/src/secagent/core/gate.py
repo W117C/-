@@ -4,10 +4,16 @@ Order of checks (fail fast):
   1. token known + verified
   2. target within scope        -> else NotAuthorizedError
   3. target not on blocklist    -> else ComplianceBlockError
-  4. quota available            -> else RateLimitedError (checked at commit time)
+  4. resolved IPs not blocked   -> else ComplianceBlockError (DNS-based defense)
+  5. quota available            -> else RateLimitedError (checked at commit time)
 All outcomes (pass or refuse) are written to the audit log.
 """
 from __future__ import annotations
+
+import ipaddress
+import logging
+import socket
+import threading
 
 from secagent.core.audit import AuditLogger
 from secagent.core.authz import AuthorizationScope, ScopeType, check_target_in_scope
@@ -15,6 +21,31 @@ from secagent.core.blocklist import Blocklist
 from secagent.core.errors import ComplianceBlockError, NotAuthorizedError
 from secagent.core.quota import QuotaManager
 from secagent.storage.sqlite_store import SQLiteStore
+
+log = logging.getLogger(__name__)
+
+
+
+def _resolve_with_timeout(target: str, timeout: float = 5.0) -> list:
+    """Resolve hostname to addresses with a thread-based timeout."""
+    result: list = []
+    exception: BaseException | None = None
+
+    def _resolve() -> None:
+        nonlocal result, exception
+        try:
+            result.extend(socket.getaddrinfo(target, None))
+        except BaseException as exc:
+            exception = exc
+
+    t = threading.Thread(target=_resolve, daemon=True)
+    t.start()
+    t.join(timeout)
+    if t.is_alive():
+        raise socket.gaierror(f"DNS resolution timed out after {timeout}s")
+    if exception:
+        raise exception  # type: ignore[misc]
+    return result
 
 
 class ComplianceGate:
@@ -33,12 +64,18 @@ class ComplianceGate:
         conn = self.store._connect()
         try:
             row = conn.execute(
-                "SELECT scope_type, scope_value, verified FROM authorizations WHERE token=?",
+                "SELECT scope_type, scope_value, verified, revoked FROM authorizations WHERE token=?",
                 (token,),
             ).fetchone()
         finally:
             conn.close()
         if row is None or not row[2]:
+            self.audit.log(caller_id=caller_id, authz_token=token, tool=tool, target=target,
+                           scope_at_call=None, outcome="not_authorized", findings_count=0, quota_used=0)
+            raise NotAuthorizedError(target=target, scope_domain=None)
+
+        # token must not be revoked
+        if row[3]:  # revoked column
             self.audit.log(caller_id=caller_id, authz_token=token, tool=tool, target=target,
                            scope_at_call=None, outcome="not_authorized", findings_count=0, quota_used=0)
             raise NotAuthorizedError(target=target, scope_domain=None)
@@ -61,6 +98,36 @@ class ComplianceGate:
                            scope_at_call=scope.value, outcome="compliance_block", findings_count=0, quota_used=0)
             raise
 
+        # DNS-based defense: resolve hostname and check each resolved IP
+        # against the blocklist. This catches hostnames that resolve to
+        # private/restricted IPs (e.g. internal.corp.example.com -> 10.x.x.x).
+        # Skip DNS resolution for targets that are already IP addresses —
+        # the blocklist directly checks IP ranges later and the DNS call
+        # would be redundant.
+        if scope.type in (ScopeType.DOMAIN, ScopeType.IP, ScopeType.CIDR):
+            try:
+                ipaddress.ip_address(target)
+                is_ip = True
+            except ValueError:
+                is_ip = False
+
+            if not is_ip:
+                try:
+                    addrinfo = _resolve_with_timeout(target, timeout=5.0)
+                    for family, _, _, _, sockaddr in addrinfo:
+                        ip = sockaddr[0]
+                        blocked, reason = self.blocklist.is_blocked(ip)
+                        if blocked:
+                            self.audit.log(caller_id=caller_id, authz_token=token, tool=tool,
+                                           target=target, scope_at_call=scope.value,
+                                           outcome="compliance_block", findings_count=0, quota_used=0)
+                            raise ComplianceBlockError(
+                                target=ip,
+                                reason=reason or f"resolved IP {ip} blocked",
+                            )
+                except socket.gaierror:
+                    log.warning("DNS resolution failed for %s — skipping IP blocklist check", target)
+
         # quota precheck: refuse BEFORE running the tool rather than after, so
         # an exhausted quota does not waste target resources and wall-clock.
         # The authoritative decrement still happens in commit_findings(); this
@@ -73,17 +140,48 @@ class ComplianceGate:
 
         return scope
 
-    def commit_findings(self, *, token: str, count: int, quota_used: int, caller_id: str = "system",
-                        tool: str = "", target: str = "", scope_value: str | None = None) -> None:
-        """Post-run: decrement quota and log an executed outcome, atomically.
+    def commit_findings(self, *, token: str, count: int, quota_used: int,
+                        caller_id: str = "system", tool: str = "", target: str = "",
+                        scope_value: str | None = None,
+                        findings: list[dict] | None = None) -> None:
+        """Post-run: decrement quota, persist findings, and log audit, atomically.
 
-        The quota decrement and the audit insert run inside a single
-        BEGIN IMMEDIATE transaction so that either both happen or neither does
-        — a failure in the audit write rolls back the quota decrement rather
-        than leaving quota consumed with no audit trail.
+        All three operations (quota decrement → findings INSERT → audit INSERT)
+        run inside a single BEGIN IMMEDIATE transaction.  If any fails, the
+        entire group rolls back — never quota consumed without audit trail.
+
+        *findings* is an optional list of Finding dicts. When provided, each
+        finding is written to the ``findings`` table (defense line 3).
         """
+        import datetime as dt
+        import json
+
         with self.store.transaction() as conn:
             self.quota.decrement_in_tx(conn, token, amount=quota_used)
+
+            # Persist findings to the existing findings table
+            if findings:
+                now = dt.datetime.now(dt.timezone.utc).isoformat()
+                for f in findings:
+                    conn.execute(
+                        """INSERT OR IGNORE INTO findings
+                           (id, engagement_id, tool, type, severity, target,
+                            title, evidence_json, source_tool, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            f.get("id", ""),
+                            f.get("engagement_id", ""),
+                            tool,
+                            f.get("type", ""),
+                            f.get("severity", "info"),
+                            f.get("target", ""),
+                            f.get("title", ""),
+                            json.dumps(f.get("evidence", {}), ensure_ascii=False),
+                            f.get("source_tool", tool),
+                            now,
+                        ),
+                    )
+
             self.audit.log_in_tx(
                 conn, caller_id=caller_id, authz_token=token, tool=tool, target=target,
                 scope_at_call=scope_value, outcome="executed", findings_count=count,

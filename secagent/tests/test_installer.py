@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
+from unittest.mock import patch
 import tarfile
 import tempfile
 import zipfile
@@ -47,7 +48,7 @@ def test_build_download_url_contains_version_and_platform(tool):
     # Contains an arch token
     assert arch in url
     # Correct extension
-    if tool == "gitleaks":
+    if tool in ("gitleaks", "ffuf"):
         assert url.endswith(".tar.gz")
     else:
         assert url.endswith(".zip")
@@ -108,15 +109,6 @@ def test_download_file_raises_tool_failed_on_error(tmp_path):
 
 
 # ---------- verify_checksum ----------
-
-def test_verify_checksum_placeholder_returns_true(tmp_path, capsys):
-    f = tmp_path / "file.bin"
-    f.write_bytes(b"anything")
-    assert verify_checksum(str(f), "placeholder_sha256_xxx") is True
-    # Warning should be printed to stderr
-    captured = capsys.readouterr()
-    assert "placeholder" in captured.err.lower()
-
 
 def test_verify_checksum_correct_returns_true(tmp_path):
     f = tmp_path / "file.bin"
@@ -221,7 +213,8 @@ def test_install_tool_with_mock_downloader(tmp_path):
     def mock_dl(url, dest):
         Path(dest).write_bytes(payload)
 
-    result_path = install_tool(tool, binaries_dir=str(binaries_dir), downloader=mock_dl)
+    with patch("secagent.binmgmt.installer.verify_checksum", return_value=True):
+        result_path = install_tool(tool, binaries_dir=str(binaries_dir), downloader=mock_dl)
     assert Path(result_path).is_file()
     assert Path(result_path).name == "subfinder"
     # Executable
@@ -239,7 +232,8 @@ def test_install_tool_gitleaks_tar_gz(tmp_path):
     def mock_dl(url, dest):
         Path(dest).write_bytes(payload)
 
-    result_path = install_tool(tool, binaries_dir=str(binaries_dir), downloader=mock_dl)
+    with patch("secagent.binmgmt.installer.verify_checksum", return_value=True):
+        result_path = install_tool(tool, binaries_dir=str(binaries_dir), downloader=mock_dl)
     assert Path(result_path).is_file()
     assert Path(result_path).name == "gitleaks"
 
@@ -262,7 +256,8 @@ def test_install_tool_url_uses_correct_platform(monkeypatch, tmp_path):
         _make_zip(p, "subfinder")
         Path(dest).write_bytes(p.read_bytes())
 
-    install_tool("subfinder", binaries_dir=str(tmp_path / "bin"), downloader=mock_dl)
+    with patch("secagent.binmgmt.installer.verify_checksum", return_value=True):
+        install_tool("subfinder", binaries_dir=str(tmp_path / "bin"), downloader=mock_dl)
     assert "Linux" in captured["url"]
     assert "arm64" in captured["url"]
 
@@ -281,7 +276,8 @@ def test_install_tool_cleans_up_temp_file(tmp_path):
     def mock_dl(url, dest):
         Path(dest).write_bytes(payload)
 
-    install_tool("subfinder", binaries_dir=str(binaries_dir), downloader=mock_dl)
+    with patch("secagent.binmgmt.installer.verify_checksum", return_value=True):
+        install_tool("subfinder", binaries_dir=str(binaries_dir), downloader=mock_dl)
     # No leftover .zip files in /tmp that we created (best-effort check)
     after = set(Path("/tmp").iterdir()) if Path("/tmp").exists() else set()
     new_files = after - before
@@ -297,7 +293,7 @@ def test_install_all_installs_all_four(tmp_path):
     # Pre-build payloads for each tool
     payloads = {}
     for tool in GO_BINARIES:
-        if tool == "gitleaks":
+        if tool in ("gitleaks", "ffuf"):
             p = tmp_path / f"{tool}.tar.gz"
             _make_targz(p, tool)
         else:
@@ -313,7 +309,8 @@ def test_install_all_installs_all_four(tmp_path):
                 return
         raise AssertionError(f"unexpected url: {url}")
 
-    results = install_all(binaries_dir=str(binaries_dir), downloader=mock_dl)
+    with patch("secagent.binmgmt.installer.verify_checksum", return_value=True):
+        results = install_all(binaries_dir=str(binaries_dir), downloader=mock_dl)
 
     assert set(results.keys()) == GO_BINARIES
     for tool, r in results.items():
@@ -328,7 +325,7 @@ def test_install_all_continues_when_one_fails(tmp_path):
 
     payloads = {}
     for tool in GO_BINARIES:
-        if tool == "gitleaks":
+        if tool in ("gitleaks", "ffuf"):
             p = tmp_path / f"{tool}.tar.gz"
             _make_targz(p, tool)
         else:
@@ -344,7 +341,8 @@ def test_install_all_continues_when_one_fails(tmp_path):
                 Path(dest).write_bytes(payloads[tool])
                 return
 
-    results = install_all(binaries_dir=str(binaries_dir), downloader=mock_dl)
+    with patch("secagent.binmgmt.installer.verify_checksum", return_value=True):
+        results = install_all(binaries_dir=str(binaries_dir), downloader=mock_dl)
 
     assert results["nuclei"]["ok"] is False
     assert "nuclei" in results["nuclei"]["error"].lower() or "simulated" in results["nuclei"]["error"].lower()

@@ -73,6 +73,10 @@ nul
 .workbuddy/
 .reasonix/
 
+# Butian scraper artifacts — may contain auth cookies
+secagent/butian_auth.json
+secagent/butian_page.html
+
 # SecAgent runtime data
 secagent/data/
 secagent/bin/

@@ -96,12 +96,245 @@ _ENUMERATE_SUBDOMAINS_SCHEMA: dict[str, Any] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# ⑨ scan_ports (async)
+# ---------------------------------------------------------------------------
+
+def _handle_scan_ports(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → scan_ports tool function."""
+    from secagent.tools.scan_ports import scan_ports
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "target": args.get("target", ""),
+        "timeout_sec": args.get("timeout_sec", 120),
+    }
+    for opt in ("ports", "scan_type", "rate"):
+        if args.get(opt) is not None:
+            params[opt] = args[opt]
+
+    return scan_ports(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_SCAN_PORTS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "string",
+            "description": (
+                "Domain or IP to scan for open ports. Must be within the "
+                "authz_token scope."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "ports": {
+            "type": "string",
+            "description": "Port range to scan (e.g. '80,443,8080-8090'). Default: '80,443,8080-8090,8443'.",
+        },
+        "scan_type": {
+            "type": "string",
+            "default": "connect",
+            "description": "'connect' (no root) or 'syn' (requires CAP_NET_RAW).",
+        },
+        "rate": {
+            "type": "integer",
+            "default": 500,
+            "description": "Scan rate in packets/second. Capped at 2000.",
+        },
+        "timeout_sec": {"type": "integer", "default": 120},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["target", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑩ discover_paths (async)
+# ---------------------------------------------------------------------------
+
+def _handle_discover_paths(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → discover_paths tool function."""
+    from secagent.tools.discover_paths import discover_paths
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "target": args.get("target", ""),
+        "timeout_sec": args.get("timeout_sec", 120),
+    }
+    for opt in ("wordlist", "extensions", "recursive", "recursive_depth",
+                 "match_status", "threads", "rate"):
+        if args.get(opt) is not None:
+            params[opt] = args[opt]
+
+    return discover_paths(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_DISCOVER_PATHS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "string",
+            "description": (
+                "URL to fuzz (e.g. 'https://example.com/FUZZ'). The host must be "
+                "within the authz_token scope."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "wordlist": {
+            "type": "string",
+            "default": "builtin",
+            "description": "Wordlist path or key: 'builtin' (L1, ~1200 paths), 'common' (L2, ~5000), or a custom path.",
+        },
+        "extensions": {
+            "type": "string",
+            "description": "File extensions to append (e.g. 'php,asp,js,bak').",
+        },
+        "recursive": {"type": "boolean", "default": False},
+        "recursive_depth": {"type": "integer", "default": 1, "description": "Recursion depth, max 3."},
+        "match_status": {"type": "string", "description": "Status codes to match (e.g. '200,301,302')."},
+        "threads": {"type": "integer", "default": 40, "description": "Thread count, max 200."},
+        "rate": {"type": "integer", "default": 100, "description": "Requests/sec, max 500."},
+        "timeout_sec": {"type": "integer", "default": 120},
+        "caller_id": {"type": "string"},
+    },
+    "required": ["target", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑪ passive_recon (sync)
+# ---------------------------------------------------------------------------
+
+def _handle_passive_recon(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → passive_recon tool function."""
+    from secagent.tools.passive_recon import passive_recon
+
+    authz_token = args.get("authz_token", "")
+    caller_id = args.get("caller_id", "mcp-client")
+
+    params: dict[str, Any] = {
+        "target": args.get("target", ""),
+    }
+    if args.get("sources") is not None:
+        params["sources"] = args["sources"]
+
+    return passive_recon(
+        gate=gate, params=params, authz_token=authz_token, caller_id=caller_id
+    )
+
+
+_PASSIVE_RECON_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "string",
+            "description": (
+                "Domain to gather passive intelligence on (e.g. 'example.com'). "
+                "Must be within the authz_token scope."
+            ),
+        },
+        "authz_token": {"type": "string"},
+        "sources": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Sources to query: 'crtsh', 'securitytrails', 'shodan'. Default: all.",
+        },
+        "caller_id": {"type": "string"},
+    },
+    "required": ["target", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑦ submit_scan (async)
+# ---------------------------------------------------------------------------
+
+_SUBMIT_SCAN_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "tool": {
+            "type": "string",
+            "description": (
+                "Tool to run asynchronously. One of: attack_surface_scan, "
+                "probe_services, gather_osint, scan_vulnerabilities, "
+                "scan_ports, discover_paths."
+            ),
+        },
+        "params": {
+            "type": "object",
+            "description": (
+                "Parameters dict passed to the tool. See individual tool "
+                "schemas for expected fields."
+            ),
+        },
+        "authz_token": {
+            "type": "string",
+            "description": "Verified authorization token covering the target(s).",
+        },
+        "caller_id": {
+            "type": "string",
+            "description": "Optional caller identifier for the audit log.",
+        },
+    },
+    "required": ["tool", "params", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑧ poll_result (async)
+# ---------------------------------------------------------------------------
+
+_POLL_RESULT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "job_id": {
+            "type": "string",
+            "description": "Job ID returned by submit_scan.",
+        },
+    },
+    "required": ["job_id"],
+}
+
+
+# ---------------------------------------------------------------------------
+# ⑫ check_health (sync, no auth required)
+# ---------------------------------------------------------------------------
+
+_CHECK_HEALTH_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {},
+    "required": [],
+}
+
+
+def _handle_check_health(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Adapt MCP arguments → check_health tool function."""
+    from secagent.tools.check_health import check_health
+    return check_health(gate=gate, params=args, authz_token=None, caller_id="system")
+
+
 def all_tools() -> list[ToolDefinition]:
     """Return every tool currently exposed over MCP.
 
-    M3 adds probe_services, gather_osint, scan_secret_leaks, crawl_target.
-    scan_vulnerabilities (nuclei) is wired separately below with its own
-    compliance guard (spec §3.2 ③ 三层防护).
+    Fast tools are exposed synchronously. Slow tools (attack_surface_scan,
+    probe_services, gather_osint, scan_vulnerabilities, scan_ports,
+    discover_paths) use submit_scan / poll_result instead to avoid MCP timeout.
     """
     return [
         ToolDefinition(
@@ -113,29 +346,6 @@ def all_tools() -> list[ToolDefinition]:
             ),
             input_schema=_ENUMERATE_SUBDOMAINS_SCHEMA,
             handler=_handle_enumerate_subdomains,
-        ),
-        ToolDefinition(
-            name="probe_services",
-            description=(
-                "Probe a list of authorized targets for live HTTP/HTTPS services "
-                "using httpx (read-only — sends benign HTTP requests only). "
-                "Returns Findings of type 'service' with port/protocol/title/"
-                "tech_stack/status_code evidence. Every target must be within "
-                "the authz_token scope; one out-of-scope target refuses the "
-                "whole call."
-            ),
-            input_schema=_PROBE_SERVICES_SCHEMA,
-            handler=_handle_probe_services,
-        ),
-        ToolDefinition(
-            name="gather_osint",
-            description=(
-                "Gather OSINT intelligence (emails, subdomains, hosts) for an "
-                "authorized target from public sources using theHarvester. "
-                "Read-only, no intrusion. Returns Findings of type 'intel'."
-            ),
-            input_schema=_GATHER_OSINT_SCHEMA,
-            handler=_handle_gather_osint,
         ),
         ToolDefinition(
             name="scan_secret_leaks",
@@ -162,17 +372,25 @@ def all_tools() -> list[ToolDefinition]:
             handler=_handle_crawl_target,
         ),
         ToolDefinition(
-            name="scan_vulnerabilities",
+            name="passive_recon",
             description=(
-                "Scan authorized targets for known vulnerabilities using nuclei "
-                "(ACTIVE — sends probe packets). Highest compliance risk tool: "
-                "targets are re-validated against the blocklist immediately "
-                "before execution, and a per-target rate limit is enforced. "
-                "Returns Findings of type 'vulnerability' with nuclei-native "
-                "severity. Only run against targets you own and have verified."
+                "Gather passive intelligence on an authorized domain from "
+                "multiple public sources (crt.sh, SecurityTrails, Shodan). "
+                "No packets sent to the target. Returns Findings of type 'intel'."
             ),
-            input_schema=_SCAN_VULNERABILITIES_SCHEMA,
-            handler=_handle_scan_vulnerabilities,
+            input_schema=_PASSIVE_RECON_SCHEMA,
+            handler=_handle_passive_recon,
+        ),
+        ToolDefinition(
+            name="check_health",
+            description=(
+                "Run a comprehensive health check on the SecAgent environment. "
+                "Reports database connectivity, binary availability, wordlist "
+                "status, and system capabilities. NO authz_token required — "
+                "this is a diagnostic tool, not a scan."
+            ),
+            input_schema=_CHECK_HEALTH_SCHEMA,
+            handler=_handle_check_health,
         ),
     ]
 

@@ -7,13 +7,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from secagent.adapters.theharvester import TheHarvesterAdapter
-from secagent.core.authz import AuthorizationScope, ScopeType
 from secagent.core.errors import InvalidInputError, NotAuthorizedError, ToolFailedError
 from secagent.core.finding import FindingType, Severity
-from secagent.core.gate import ComplianceGate
-from secagent.core.registry import AuthorizationRegistry
-from secagent.storage.sqlite_store import SQLiteStore
 from secagent.tools.gather_osint import gather_osint
+from helper import setup_gate_and_token
 
 
 # ---------------------------------------------------------------------------
@@ -40,17 +37,6 @@ def _canned_output() -> str:
             "usernames": [],
         }
     )
-
-
-def _setup_gate_and_token(tmp_db, scope_domain="acme.com"):
-    """Bootstrap a real ComplianceGate + verified token for DOMAIN scope."""
-    store = SQLiteStore(tmp_db)
-    store.bootstrap()
-    reg = AuthorizationRegistry(store, default_quota=100)
-    token = reg.issue(scope=AuthorizationScope(ScopeType.DOMAIN, scope_domain))
-    reg.mark_verified(token, method="dns_txt")
-    gate = ComplianceGate(store, reg.quota, default_quota=100)
-    return gate, token
 
 
 # ---------------------------------------------------------------------------
@@ -163,13 +149,17 @@ def test_adapter_respects_data_types_filter():
 
 
 def test_tool_returns_findings_for_authorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db)
     with patch("secagent.tools.gather_osint.TheHarvesterAdapter") as MockAdapter:
         mock_instance = MagicMock()
-        mock_instance.run.return_value = [
-            MagicMock(target="admin@acme.com"),
-            MagicMock(target="mail.acme.com"),
-        ]
+        def _mk(target, i):
+            m = MagicMock()
+            m.target = target
+            m.to_dict.return_value = {"id": f"fnd_{i}", "type": "intel", "severity": "info",
+                "target": target, "title": target, "evidence": {}, "source_tool": "theHarvester",
+                "raw": {}, "timestamp": "2025-01-01"}
+            return m
+        mock_instance.run.return_value = [_mk("admin@acme.com", 0), _mk("mail.acme.com", 1)]
         MockAdapter.return_value = mock_instance
 
         result = gather_osint(
@@ -186,7 +176,7 @@ def test_tool_returns_findings_for_authorized_target(tmp_db):
 
 
 def test_tool_rejects_unauthorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_domain="acme.com")
+    gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
     with pytest.raises(NotAuthorizedError):
         gather_osint(
             gate=gate,
@@ -197,7 +187,7 @@ def test_tool_rejects_unauthorized_target(tmp_db):
 
 
 def test_tool_raises_invalid_input_when_target_missing(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db)
     with pytest.raises(InvalidInputError):
         gather_osint(
             gate=gate,
@@ -208,7 +198,7 @@ def test_tool_raises_invalid_input_when_target_missing(tmp_db):
 
 
 def test_tool_empty_result_still_commits_quota(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db)
     with patch("secagent.tools.gather_osint.TheHarvesterAdapter") as MockAdapter:
         mock_instance = MagicMock()
         mock_instance.run.return_value = []

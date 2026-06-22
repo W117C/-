@@ -14,28 +14,20 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from secagent.adapters.nuclei import NucleiAdapter, _NUCLEI_SEVERITY_MAP
-from secagent.core.authz import AuthorizationScope, ScopeType
+from secagent.adapters.nuclei import NucleiAdapter
 from secagent.core.errors import (
     ComplianceBlockError,
     InvalidInputError,
+    NotAuthorizedError,
     ToolFailedError,
 )
+from secagent.core.authz import AuthorizationScope, ScopeType
 from secagent.core.finding import FindingType, Severity
 from secagent.core.gate import ComplianceGate
 from secagent.core.registry import AuthorizationRegistry
 from secagent.storage.sqlite_store import SQLiteStore
 from secagent.tools.scan_vulnerabilities import scan_vulnerabilities
-
-
-def _setup_gate_and_token(tmp_db, scope_domain="acme.com"):
-    store = SQLiteStore(tmp_db)
-    store.bootstrap()
-    reg = AuthorizationRegistry(store, default_quota=100)
-    token = reg.issue(scope=AuthorizationScope(ScopeType.DOMAIN, scope_domain))
-    reg.mark_verified(token, method="dns_txt")
-    gate = ComplianceGate(store, reg.quota, default_quota=100)
-    return gate, token
+from helper import setup_gate_and_token
 
 
 def _mock_launcher(stdout_lines, returncode=0):
@@ -164,11 +156,18 @@ class TestNucleiAdapter:
 
 class TestScanVulnerabilitiesTool:
     def test_authorized_target_returns_findings(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
+        def _mk(target, i):
+            m = MagicMock()
+            m.target = target
+            m.to_dict.return_value = {"id": f"fnd_{i}", "type": "vulnerability", "severity": "medium",
+                "target": target, "title": target, "evidence": {}, "source_tool": "nuclei",
+                "raw": {}, "timestamp": "2025-01-01"}
+            return m
         with patch("secagent.tools.scan_vulnerabilities.NucleiAdapter") as MockAd:
             MockAd.return_value.run.return_value = [
-                MagicMock(target="https://sub.acme.com"),
-                MagicMock(target="https://blog.acme.com"),
+                _mk("https://sub.acme.com", 0),
+                _mk("https://blog.acme.com", 1),
             ]
             result = scan_vulnerabilities(
                 gate=gate, params={"targets": ["https://sub.acme.com"]},
@@ -179,16 +178,16 @@ class TestScanVulnerabilitiesTool:
         assert result["quota_used"] == 1
 
     def test_out_of_scope_target_refused(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db, "acme.com")
-        with pytest.raises(Exception):  # NotAuthorizedError
+        gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
+        with pytest.raises(NotAuthorizedError):
             scan_vulnerabilities(
                 gate=gate, params={"targets": ["https://evil.com"]},
                 authz_token=token, caller_id="test",
             )
 
     def test_one_out_of_scope_target_refuses_whole_call(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db, "acme.com")
-        with pytest.raises(Exception):
+        gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
+        with pytest.raises(NotAuthorizedError):
             scan_vulnerabilities(
                 gate=gate,
                 params={"targets": ["https://sub.acme.com", "https://evil.com"]},
@@ -196,7 +195,7 @@ class TestScanVulnerabilitiesTool:
             )
 
     def test_empty_targets_raises_invalid_input(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
         with pytest.raises(InvalidInputError):
             scan_vulnerabilities(
                 gate=gate, params={"targets": []},
@@ -204,7 +203,7 @@ class TestScanVulnerabilitiesTool:
             )
 
     def test_missing_targets_raises_invalid_input(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
         with pytest.raises(InvalidInputError):
             scan_vulnerabilities(
                 gate=gate, params={},
@@ -214,7 +213,7 @@ class TestScanVulnerabilitiesTool:
     def test_layer2_blocklist_recheck_refuses_gov_even_if_in_scope(self, tmp_db):
         """Defense in depth: even if a .gov target is somehow authorized,
         the layer-2 blocklist re-check must refuse it before nuclei runs."""
-        gate, token = _setup_gate_and_token(tmp_db, "example.gov")
+        gate, token = setup_gate_and_token(tmp_db, scope_value="example.gov")
         with pytest.raises(ComplianceBlockError):
             scan_vulnerabilities(
                 gate=gate, params={"targets": ["https://example.gov"]},
@@ -222,7 +221,7 @@ class TestScanVulnerabilitiesTool:
             )
 
     def test_layer2_blocklist_recheck_refuses_private_ip(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db, "acme.com")
+        gate, token = setup_gate_and_token(tmp_db, scope_value="acme.com")
         # 192.168.x is private — even though we authorize acme.com, an
         # authorized-domain scan should not somehow include private IPs.
         # We authorize a private-IP scope to simulate the edge case.
@@ -238,7 +237,7 @@ class TestScanVulnerabilitiesTool:
             )
 
     def test_rate_limit_clamped_to_safe_max(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
         captured = {}
 
         def fake_run(params):
@@ -255,7 +254,7 @@ class TestScanVulnerabilitiesTool:
         assert captured["rate_limit"] == 500  # clamped
 
     def test_rate_limit_clamped_to_min_1(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
         captured = {}
 
         def fake_run(params):
@@ -272,7 +271,7 @@ class TestScanVulnerabilitiesTool:
         assert captured["rate_limit"] == 1  # floor
 
     def test_empty_result_still_commits_quota(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
         with patch("secagent.tools.scan_vulnerabilities.NucleiAdapter") as MockAd:
             MockAd.return_value.run.return_value = []
             result = scan_vulnerabilities(
@@ -283,7 +282,7 @@ class TestScanVulnerabilitiesTool:
         assert result["quota_used"] == 1
 
     def test_tool_failure_propagates(self, tmp_db):
-        gate, token = _setup_gate_and_token(tmp_db)
+        gate, token = setup_gate_and_token(tmp_db)
         with patch("secagent.tools.scan_vulnerabilities.NucleiAdapter") as MockAd:
             MockAd.return_value.run.side_effect = ToolFailedError(
                 tool="nuclei", detail="binary not found"

@@ -53,6 +53,12 @@ def crawl_target(
     adapter = SimpleCrawlerAdapter(timeout_sec=params.get("timeout_sec", 30))
     findings: list[Finding] = adapter.run(params)
 
+    # Build response
+    engagement_id = f"eng_{uuid.uuid4().hex}"
+    findings_dicts = [f.to_dict() for f in findings]
+    for fd in findings_dicts:
+        fd["engagement_id"] = engagement_id
+
     gate.commit_findings(
         token=authz_token,
         count=len(findings),
@@ -61,10 +67,11 @@ def crawl_target(
         tool=tool_name,
         target=target,
         scope_value=scope.value,
+        findings=findings_dicts,
     )
 
     return {
-        "engagement_id": f"eng_{uuid.uuid4().hex[:8]}",
+        "engagement_id": engagement_id,
         "tool": tool_name,
         "findings": [f.to_dict() for f in findings],
         "summary": Finding.summary(findings),

@@ -37,14 +37,23 @@ _SECRET_HINT_PATTERNS = [
 _VALID_EXTRACT_TYPES = {"forms", "js_endpoints", "emails", "comments"}
 
 
-def _default_fetch(url: str, timeout: int) -> str:
+def _default_fetch(url: str, timeout: int, proxy_manager=None) -> str:
     """Fetch `url` and return decoded text using urllib stdlib.
 
     Any network-level failure is wrapped in ToolFailedError so callers get a
     uniform error type regardless of the underlying stdlib exception.
+
+    If *proxy_manager* is provided and proxy is enabled, uses a ProxyHandler
+    to route requests through the configured proxy.
     """
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "SecAgent/1.0"})
+        if proxy_manager and proxy_manager.is_enabled():
+            handler = proxy_manager.build_proxy_handler()
+            if handler:
+                opener = urllib.request.build_opener(handler)
+                with opener.open(req, timeout=timeout) as resp:
+                    return resp.read().decode("utf-8", errors="replace")
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.URLError as e:
@@ -58,9 +67,9 @@ def _default_fetch(url: str, timeout: int) -> str:
 class SimpleCrawlerAdapter(BaseAdapter):
     """Built-in single-page HTTP crawler."""
 
-    def __init__(self, timeout_sec: int = 30, fetcher: Callable[[str, int], str] | None = None):
+    def __init__(self, timeout_sec: int = 30, fetcher=None, proxy_manager=None):
         self._timeout = timeout_sec
-        self._fetcher = fetcher or _default_fetch
+        self._fetcher = fetcher or (lambda url, t: _default_fetch(url, t, proxy_manager))
 
     @property
     def tool_name(self) -> str:
@@ -125,7 +134,7 @@ class SimpleCrawlerAdapter(BaseAdapter):
             action = action_m.group(2) if action_m else ""
             method = (method_m.group(2) if method_m else "get").lower() or "get"
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.EXPOSURE,
                 severity=Severity.INFO,
                 target=url,
@@ -150,7 +159,7 @@ class SimpleCrawlerAdapter(BaseAdapter):
                 continue
             seen.add(endpoint)
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.EXPOSURE,
                 severity=Severity.INFO,
                 target=url,
@@ -173,7 +182,7 @@ class SimpleCrawlerAdapter(BaseAdapter):
                 continue
             seen.add(email)
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.EXPOSURE,
                 severity=Severity.INFO,
                 target=url,
@@ -195,7 +204,7 @@ class SimpleCrawlerAdapter(BaseAdapter):
             if not hint:
                 continue
             findings.append(Finding(
-                id=f"fnd_{uuid.uuid4().hex[:8]}",
+                id=f"fnd_{uuid.uuid4().hex}",
                 type=FindingType.EXPOSURE,
                 severity=Severity.HIGH,
                 target=url,

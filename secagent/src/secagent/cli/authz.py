@@ -60,10 +60,23 @@ def authz_verify(token, method):
     click.echo(f"verified: {token} via {method}")
 
 
+@authz.command("revoke")
+@click.argument("token")
+def authz_revoke(token):
+    """Revoke an authorization token, preventing future use."""
+    reg = _registry()
+    record = reg.get(token)
+    if record is None:
+        raise click.UsageError(f"Unknown token: {token}")
+    reg.revoke(token)
+    click.echo(f"revoked: {token}")
+
+
 @authz.command("list")
 def authz_list():
     """List all authorization records."""
     reg = _registry()
     for r in reg.list():
         status = "verified" if r.verified else "unverified"
-        click.echo(f"{r.token}\t{r.scope.type.value}={r.scope.value}\t{status}\t{r.created_at}\t{r.note or ''}")
+        revoked = " [REVOKED]" if getattr(r, 'revoked', False) else ""
+        click.echo(f"{r.token}\t{r.scope.type.value}={r.scope.value}\t{status}{revoked}\t{r.created_at}\t{r.note or ''}")

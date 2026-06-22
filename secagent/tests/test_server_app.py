@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from unittest.mock import patch, MagicMock
 
-import pytest
 
 from secagent.config import Config
 from secagent.core.authz import AuthorizationScope, ScopeType
@@ -52,10 +51,14 @@ def test_server_dispatches_authorized_target(tmp_db):
     server = _make_server(tmp_db)
     token = _issue_verified_token(server, "acme.com")
 
-    fake_findings = [
-        MagicMock(target="sub.acme.com"),
-        MagicMock(target="blog.acme.com"),
-    ]
+    def _mk(target, i):
+        m = MagicMock()
+        m.target = target
+        m.to_dict.return_value = {"id": f"fnd_{i}", "type": "subdomain", "severity": "info",
+            "target": target, "title": f"Subdomain: {target}", "evidence": {}, "source_tool": "subfinder",
+            "raw": {}, "timestamp": "2025-01-01"}
+        return m
+    fake_findings = [_mk("sub.acme.com", 0), _mk("blog.acme.com", 1)]
     with patch("secagent.tools.enumerate_subdomains.SubfinderAdapter") as MockAdapter:
         MockAdapter.return_value.run.return_value = fake_findings
         result = server.call_tool("enumerate_subdomains", {
@@ -168,6 +171,30 @@ def test_server_rejects_empty_string_required_arg(tmp_db):
         "authz_token": "auth_x",
     })
     assert result["error"]["code"] == "INVALID_INPUT"
+
+
+def test_server_validates_argument_type(tmp_db):
+    server = _make_server(tmp_db)
+    result = server.call_tool("submit_scan", {
+        "tool": "probe_services",
+        "params": [],
+        "authz_token": "auth_x",
+    })
+    assert result["error"]["code"] == "INVALID_INPUT"
+    assert "params" in result["error"]["message"]
+    assert "object" in result["error"]["message"]
+
+
+def test_server_validates_integer_argument_type(tmp_db):
+    server = _make_server(tmp_db)
+    result = server.call_tool("enumerate_subdomains", {
+        "target_domain": "acme.com",
+        "authz_token": "auth_x",
+        "timeout_sec": "120",
+    })
+    assert result["error"]["code"] == "INVALID_INPUT"
+    assert "timeout_sec" in result["error"]["message"]
+    assert "integer" in result["error"]["message"]
 
 
 # --- tool execution errors --------------------------------------------------

@@ -1,0 +1,2050 @@
+{
+  "testphp": {
+    "enumerate_subdomains": {
+      "engagement_id": "eng_c0fe7e97",
+      "tool": "enumerate_subdomains",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {
+          "info": 0
+        },
+        "by_type": {
+          "subdomain": 0
+        }
+      },
+      "quota_used": 1
+    },
+    "scan_ports": {
+      "engagement_id": "eng_a2b7aa64",
+      "tool": "scan_ports",
+      "findings": [
+        {
+          "id": "fnd_1a5958c6",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:19.239673+00:00"
+        },
+        {
+          "id": "fnd_6d3571cd",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:19.239743+00:00"
+        },
+        {
+          "id": "fnd_2a09c82c",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:19.239762+00:00"
+        },
+        {
+          "id": "fnd_8b260bbe",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:19.239777+00:00"
+        },
+        {
+          "id": "fnd_ee5f09e2",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:19.239796+00:00"
+        },
+        {
+          "id": "fnd_2f14ecc5",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:19.239811+00:00"
+        }
+      ],
+      "summary": {
+        "total": 6,
+        "by_severity": {
+          "info": 6
+        },
+        "by_type": {
+          "open_port": 6
+        }
+      },
+      "quota_used": 1
+    },
+    "probe_services": {
+      "engagement_id": "eng_417889b3",
+      "tool": "probe_services",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {},
+        "by_type": {}
+      },
+      "quota_used": 1
+    },
+    "discover_paths": {
+      "findings": [],
+      "error": "Tool 'ffuf' failed: exit code 2: flag provided but not defined: -max-time\n"
+    },
+    "scan_vulnerabilities": {
+      "findings": [],
+      "note": "no live services"
+    },
+    "passive_recon": {
+      "engagement_id": "eng_cd136536",
+      "tool": "passive_recon",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {},
+        "by_type": {}
+      },
+      "quota_used": 1
+    },
+    "attack_surface_scan": {
+      "engagement_id": "eng_fedc3332",
+      "tool": "attack_surface_scan",
+      "findings": [
+        {
+          "id": "fnd_1794533e",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.585889+00:00"
+        },
+        {
+          "id": "fnd_08b576b2",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8085/tcp",
+          "evidence": {
+            "port": 8085,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.585964+00:00"
+        },
+        {
+          "id": "fnd_de5bbd7f",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8089/tcp",
+          "evidence": {
+            "port": 8089,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.585984+00:00"
+        },
+        {
+          "id": "fnd_2be53998",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8090/tcp",
+          "evidence": {
+            "port": 8090,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.585998+00:00"
+        },
+        {
+          "id": "fnd_70533c16",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8088/tcp",
+          "evidence": {
+            "port": 8088,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586011+00:00"
+        },
+        {
+          "id": "fnd_50bc554e",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8086/tcp",
+          "evidence": {
+            "port": 8086,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586024+00:00"
+        },
+        {
+          "id": "fnd_b6c7a836",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8081/tcp",
+          "evidence": {
+            "port": 8081,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586036+00:00"
+        },
+        {
+          "id": "fnd_1f9be5fc",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8083/tcp",
+          "evidence": {
+            "port": 8083,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586048+00:00"
+        },
+        {
+          "id": "fnd_9fa6af31",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8082/tcp",
+          "evidence": {
+            "port": 8082,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586063+00:00"
+        },
+        {
+          "id": "fnd_697e7fa4",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8443/tcp",
+          "evidence": {
+            "port": 8443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586075+00:00"
+        },
+        {
+          "id": "fnd_f88033e6",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8084/tcp",
+          "evidence": {
+            "port": 8084,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586087+00:00"
+        },
+        {
+          "id": "fnd_d8ad7df9",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586098+00:00"
+        },
+        {
+          "id": "fnd_cf05b8d4",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8087/tcp",
+          "evidence": {
+            "port": 8087,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586110+00:00"
+        },
+        {
+          "id": "fnd_bad5f40a",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586121+00:00"
+        },
+        {
+          "id": "fnd_f57d5f58",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8089/tcp",
+          "evidence": {
+            "port": 8089,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586132+00:00"
+        },
+        {
+          "id": "fnd_4e0dc860",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8081/tcp",
+          "evidence": {
+            "port": 8081,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586144+00:00"
+        },
+        {
+          "id": "fnd_8b90ade7",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8443/tcp",
+          "evidence": {
+            "port": 8443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586155+00:00"
+        },
+        {
+          "id": "fnd_3338f649",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586166+00:00"
+        },
+        {
+          "id": "fnd_dfcf8565",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586178+00:00"
+        },
+        {
+          "id": "fnd_b8b5edd1",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586189+00:00"
+        },
+        {
+          "id": "fnd_9b2d5d51",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8090/tcp",
+          "evidence": {
+            "port": 8090,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586200+00:00"
+        },
+        {
+          "id": "fnd_b8d568f8",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8088/tcp",
+          "evidence": {
+            "port": 8088,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586211+00:00"
+        },
+        {
+          "id": "fnd_ea88a029",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8086/tcp",
+          "evidence": {
+            "port": 8086,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586222+00:00"
+        },
+        {
+          "id": "fnd_a006455a",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8083/tcp",
+          "evidence": {
+            "port": 8083,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586233+00:00"
+        },
+        {
+          "id": "fnd_95c61b90",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8082/tcp",
+          "evidence": {
+            "port": 8082,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586300+00:00"
+        },
+        {
+          "id": "fnd_54636939",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8084/tcp",
+          "evidence": {
+            "port": 8084,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586314+00:00"
+        },
+        {
+          "id": "fnd_12bee25b",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8087/tcp",
+          "evidence": {
+            "port": 8087,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586325+00:00"
+        },
+        {
+          "id": "fnd_ff2eba2a",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testphp.vulnweb.com",
+          "title": "Open port 8085/tcp",
+          "evidence": {
+            "port": 8085,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:00:55.586336+00:00"
+        }
+      ],
+      "summary": {
+        "total": 28,
+        "by_severity": {
+          "info": 28
+        },
+        "by_type": {
+          "open_port": 28
+        }
+      },
+      "quota_used": 3,
+      "phases": {
+        "enumerate_subdomains": {
+          "engagement_id": "eng_d24cb200",
+          "tool": "enumerate_subdomains",
+          "findings": [],
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "info": 0
+            },
+            "by_type": {
+              "subdomain": 0
+            }
+          },
+          "quota_used": 1
+        },
+        "scan_ports": {
+          "engagement_id": "eng_4ee45c6a",
+          "tool": "scan_ports",
+          "findings": [
+            {
+              "id": "fnd_1794533e",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 80/tcp",
+              "evidence": {
+                "port": 80,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.585889+00:00"
+            },
+            {
+              "id": "fnd_08b576b2",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8085/tcp",
+              "evidence": {
+                "port": 8085,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.585964+00:00"
+            },
+            {
+              "id": "fnd_de5bbd7f",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8089/tcp",
+              "evidence": {
+                "port": 8089,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.585984+00:00"
+            },
+            {
+              "id": "fnd_2be53998",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8090/tcp",
+              "evidence": {
+                "port": 8090,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.585998+00:00"
+            },
+            {
+              "id": "fnd_70533c16",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8088/tcp",
+              "evidence": {
+                "port": 8088,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586011+00:00"
+            },
+            {
+              "id": "fnd_50bc554e",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8086/tcp",
+              "evidence": {
+                "port": 8086,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586024+00:00"
+            },
+            {
+              "id": "fnd_b6c7a836",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8081/tcp",
+              "evidence": {
+                "port": 8081,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586036+00:00"
+            },
+            {
+              "id": "fnd_1f9be5fc",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8083/tcp",
+              "evidence": {
+                "port": 8083,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586048+00:00"
+            },
+            {
+              "id": "fnd_9fa6af31",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8082/tcp",
+              "evidence": {
+                "port": 8082,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586063+00:00"
+            },
+            {
+              "id": "fnd_697e7fa4",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8443/tcp",
+              "evidence": {
+                "port": 8443,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586075+00:00"
+            },
+            {
+              "id": "fnd_f88033e6",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8084/tcp",
+              "evidence": {
+                "port": 8084,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586087+00:00"
+            },
+            {
+              "id": "fnd_d8ad7df9",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 443/tcp",
+              "evidence": {
+                "port": 443,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586098+00:00"
+            },
+            {
+              "id": "fnd_cf05b8d4",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8087/tcp",
+              "evidence": {
+                "port": 8087,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586110+00:00"
+            },
+            {
+              "id": "fnd_bad5f40a",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8080/tcp",
+              "evidence": {
+                "port": 8080,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586121+00:00"
+            },
+            {
+              "id": "fnd_f57d5f58",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8089/tcp",
+              "evidence": {
+                "port": 8089,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586132+00:00"
+            },
+            {
+              "id": "fnd_4e0dc860",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8081/tcp",
+              "evidence": {
+                "port": 8081,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586144+00:00"
+            },
+            {
+              "id": "fnd_8b90ade7",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8443/tcp",
+              "evidence": {
+                "port": 8443,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586155+00:00"
+            },
+            {
+              "id": "fnd_3338f649",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 443/tcp",
+              "evidence": {
+                "port": 443,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586166+00:00"
+            },
+            {
+              "id": "fnd_dfcf8565",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8080/tcp",
+              "evidence": {
+                "port": 8080,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586178+00:00"
+            },
+            {
+              "id": "fnd_b8b5edd1",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 80/tcp",
+              "evidence": {
+                "port": 80,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586189+00:00"
+            },
+            {
+              "id": "fnd_9b2d5d51",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8090/tcp",
+              "evidence": {
+                "port": 8090,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586200+00:00"
+            },
+            {
+              "id": "fnd_b8d568f8",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8088/tcp",
+              "evidence": {
+                "port": 8088,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586211+00:00"
+            },
+            {
+              "id": "fnd_ea88a029",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8086/tcp",
+              "evidence": {
+                "port": 8086,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586222+00:00"
+            },
+            {
+              "id": "fnd_a006455a",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8083/tcp",
+              "evidence": {
+                "port": 8083,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586233+00:00"
+            },
+            {
+              "id": "fnd_95c61b90",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8082/tcp",
+              "evidence": {
+                "port": 8082,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586300+00:00"
+            },
+            {
+              "id": "fnd_54636939",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8084/tcp",
+              "evidence": {
+                "port": 8084,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586314+00:00"
+            },
+            {
+              "id": "fnd_12bee25b",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8087/tcp",
+              "evidence": {
+                "port": 8087,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586325+00:00"
+            },
+            {
+              "id": "fnd_ff2eba2a",
+              "type": "open_port",
+              "severity": "info",
+              "target": "testphp.vulnweb.com",
+              "title": "Open port 8085/tcp",
+              "evidence": {
+                "port": 8085,
+                "protocol": "tcp",
+                "service": "",
+                "scan_type": "connect"
+              },
+              "source_tool": "naabu",
+              "raw": {},
+              "timestamp": "2026-06-22T05:00:55.586336+00:00"
+            }
+          ],
+          "summary": {
+            "total": 28,
+            "by_severity": {
+              "info": 28
+            },
+            "by_type": {
+              "open_port": 28
+            }
+          },
+          "quota_used": 1
+        },
+        "probe_services": {
+          "engagement_id": "eng_9cb9e9c5",
+          "tool": "probe_services",
+          "findings": [],
+          "summary": {
+            "total": 0,
+            "by_severity": {},
+            "by_type": {}
+          },
+          "quota_used": 1
+        },
+        "discover_paths": {
+          "engagement_id": "",
+          "tool": "discover_paths",
+          "findings": [],
+          "summary": {
+            "total": 0,
+            "by_severity": {},
+            "by_type": {}
+          },
+          "quota_used": 0,
+          "skipped": "no live services"
+        },
+        "scan_vulnerabilities": {
+          "engagement_id": "",
+          "tool": "scan_vulnerabilities",
+          "findings": [],
+          "summary": {
+            "total": 0,
+            "by_severity": {},
+            "by_type": {}
+          },
+          "quota_used": 0,
+          "skipped": "no live services discovered"
+        }
+      },
+      "scan_targets": [],
+      "scan_targets_omitted": 0
+    }
+  },
+  "testasp": {
+    "enumerate_subdomains": {
+      "engagement_id": "eng_be701700",
+      "tool": "enumerate_subdomains",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {
+          "info": 0
+        },
+        "by_type": {
+          "subdomain": 0
+        }
+      },
+      "quota_used": 1
+    },
+    "scan_ports": {
+      "engagement_id": "eng_84fc311e",
+      "tool": "scan_ports",
+      "findings": [
+        {
+          "id": "fnd_d6b31c31",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testasp.vulnweb.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:01:30.773609+00:00"
+        },
+        {
+          "id": "fnd_64ede5a2",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testasp.vulnweb.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:01:30.773674+00:00"
+        },
+        {
+          "id": "fnd_eff51c1b",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testasp.vulnweb.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:01:30.773687+00:00"
+        },
+        {
+          "id": "fnd_5c9a455c",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testasp.vulnweb.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:01:30.773699+00:00"
+        },
+        {
+          "id": "fnd_916e60ce",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testasp.vulnweb.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:01:30.773714+00:00"
+        },
+        {
+          "id": "fnd_df02a54d",
+          "type": "open_port",
+          "severity": "info",
+          "target": "testasp.vulnweb.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:01:30.773727+00:00"
+        }
+      ],
+      "summary": {
+        "total": 6,
+        "by_severity": {
+          "info": 6
+        },
+        "by_type": {
+          "open_port": 6
+        }
+      },
+      "quota_used": 1
+    },
+    "probe_services": {
+      "engagement_id": "eng_840634dd",
+      "tool": "probe_services",
+      "findings": [
+        {
+          "id": "fnd_6972c350",
+          "type": "service",
+          "severity": "info",
+          "target": "28.0.0.67",
+          "title": "Service: 28.0.0.67:80",
+          "evidence": {
+            "port": "80",
+            "protocol": "http",
+            "service": "Microsoft-IIS/8.5",
+            "title": "acuforum forums",
+            "tech_stack": [
+              "DreamWeaver",
+              "IIS:8.5",
+              "Microsoft ASP.NET",
+              "Windows Server"
+            ],
+            "status_code": 200
+          },
+          "source_tool": "httpx",
+          "raw": {
+            "timestamp": "2026-06-22T13:01:42.301879+08:00",
+            "port": "80",
+            "url": "http://testasp.vulnweb.com",
+            "input": "testasp.vulnweb.com",
+            "title": "acuforum forums",
+            "scheme": "http",
+            "webserver": "Microsoft-IIS/8.5",
+            "content_type": "text/html",
+            "method": "GET",
+            "host": "28.0.0.67",
+            "path": "/",
+            "time": "479.573ms",
+            "a": [
+              "28.0.0.67"
+            ],
+            "tech": [
+              "DreamWeaver",
+              "IIS:8.5",
+              "Microsoft ASP.NET",
+              "Windows Server"
+            ],
+            "words": 330,
+            "lines": 44,
+            "status_code": 200,
+            "content_length": 3560,
+            "failed": false,
+            "knowledgebase": {
+              "PageType": "nonerror",
+              "pHash": 0
+            },
+            "resolvers": [
+              "1.1.1.1:53",
+              "1.0.0.1:53"
+            ]
+          },
+          "timestamp": "2026-06-22T05:01:42.311864+00:00"
+        }
+      ],
+      "summary": {
+        "total": 1,
+        "by_severity": {
+          "info": 1
+        },
+        "by_type": {
+          "service": 1
+        }
+      },
+      "quota_used": 1
+    },
+    "discover_paths": {
+      "findings": [],
+      "error": "Tool 'ffuf' failed: exit code 2: flag provided but not defined: -max-time\n"
+    },
+    "scan_vulnerabilities": {
+      "findings": [],
+      "error": "Target '28.0.0.67' is not within authorized scope (scope: testasp.vulnweb.com)"
+    },
+    "passive_recon": {
+      "engagement_id": "eng_fa9af70c",
+      "tool": "passive_recon",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {},
+        "by_type": {}
+      },
+      "quota_used": 1
+    },
+    "attack_surface_scan": {
+      "findings": [],
+      "error": "Target '28.0.0.67' is not within authorized scope (scope: testasp.vulnweb.com)"
+    }
+  },
+  "httpbin": {
+    "enumerate_subdomains": {
+      "engagement_id": "eng_19c18c8e",
+      "tool": "enumerate_subdomains",
+      "findings": [
+        {
+          "id": "fnd_6c03a71d",
+          "type": "subdomain",
+          "severity": "info",
+          "target": "eu.httpbin.org",
+          "title": "Subdomain: eu.httpbin.org",
+          "evidence": {
+            "source": "hackertarget",
+            "domain_queried": "httpbin.org"
+          },
+          "source_tool": "subfinder",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:54.413796+00:00"
+        },
+        {
+          "id": "fnd_d11c5047",
+          "type": "subdomain",
+          "severity": "info",
+          "target": "www.httpbin.org",
+          "title": "Subdomain: www.httpbin.org",
+          "evidence": {
+            "source": "hackertarget",
+            "domain_queried": "httpbin.org"
+          },
+          "source_tool": "subfinder",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:54.413856+00:00"
+        }
+      ],
+      "summary": {
+        "total": 2,
+        "by_severity": {
+          "info": 2
+        },
+        "by_type": {
+          "subdomain": 2
+        }
+      },
+      "quota_used": 1
+    },
+    "scan_ports": {
+      "engagement_id": "eng_7d7e7aee",
+      "tool": "scan_ports",
+      "findings": [
+        {
+          "id": "fnd_ca4c9df4",
+          "type": "open_port",
+          "severity": "info",
+          "target": "httpbin.org",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:57.379222+00:00"
+        },
+        {
+          "id": "fnd_43c272fa",
+          "type": "open_port",
+          "severity": "info",
+          "target": "httpbin.org",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:57.379336+00:00"
+        },
+        {
+          "id": "fnd_28cab48b",
+          "type": "open_port",
+          "severity": "info",
+          "target": "httpbin.org",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:57.379358+00:00"
+        },
+        {
+          "id": "fnd_1e72b4d5",
+          "type": "open_port",
+          "severity": "info",
+          "target": "httpbin.org",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:57.379373+00:00"
+        },
+        {
+          "id": "fnd_8c407296",
+          "type": "open_port",
+          "severity": "info",
+          "target": "httpbin.org",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:57.379389+00:00"
+        },
+        {
+          "id": "fnd_d14b0293",
+          "type": "open_port",
+          "severity": "info",
+          "target": "httpbin.org",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:03:57.379435+00:00"
+        }
+      ],
+      "summary": {
+        "total": 6,
+        "by_severity": {
+          "info": 6
+        },
+        "by_type": {
+          "open_port": 6
+        }
+      },
+      "quota_used": 1
+    },
+    "probe_services": {
+      "engagement_id": "eng_d5eea78e",
+      "tool": "probe_services",
+      "findings": [
+        {
+          "id": "fnd_37a5435e",
+          "type": "service",
+          "severity": "info",
+          "target": "28.0.0.69",
+          "title": "Service: 28.0.0.69:443",
+          "evidence": {
+            "port": "443",
+            "protocol": "https",
+            "service": "gunicorn/19.9.0",
+            "title": "httpbin.org",
+            "tech_stack": [
+              "Python",
+              "React",
+              "Swagger UI",
+              "gunicorn:19.9.0",
+              "jQuery"
+            ],
+            "status_code": 200
+          },
+          "source_tool": "httpx",
+          "raw": {
+            "timestamp": "2026-06-22T13:03:59.695305+08:00",
+            "port": "443",
+            "url": "https://httpbin.org",
+            "input": "httpbin.org",
+            "title": "httpbin.org",
+            "scheme": "https",
+            "webserver": "gunicorn/19.9.0",
+            "content_type": "text/html",
+            "method": "GET",
+            "host": "28.0.0.69",
+            "path": "/",
+            "time": "1.247240542s",
+            "a": [
+              "28.0.0.69"
+            ],
+            "tech": [
+              "Python",
+              "React",
+              "Swagger UI",
+              "gunicorn:19.9.0",
+              "jQuery"
+            ],
+            "words": 3473,
+            "lines": 208,
+            "status_code": 200,
+            "content_length": 9593,
+            "failed": false,
+            "knowledgebase": {
+              "PageType": "nonerror",
+              "pHash": 0
+            },
+            "resolvers": [
+              "1.1.1.1:53",
+              "223.5.5.5:53"
+            ]
+          },
+          "timestamp": "2026-06-22T05:04:00.462729+00:00"
+        },
+        {
+          "id": "fnd_388ce4a4",
+          "type": "service",
+          "severity": "info",
+          "target": "28.0.0.71",
+          "title": "Service: 28.0.0.71:443",
+          "evidence": {
+            "port": "443",
+            "protocol": "https",
+            "service": "gunicorn/19.9.0",
+            "title": "httpbin.org",
+            "tech_stack": [
+              "Python",
+              "React",
+              "Swagger UI",
+              "gunicorn:19.9.0",
+              "jQuery"
+            ],
+            "status_code": 200
+          },
+          "source_tool": "httpx",
+          "raw": {
+            "timestamp": "2026-06-22T13:03:59.800092+08:00",
+            "port": "443",
+            "url": "https://www.httpbin.org",
+            "input": "www.httpbin.org",
+            "title": "httpbin.org",
+            "scheme": "https",
+            "webserver": "gunicorn/19.9.0",
+            "content_type": "text/html",
+            "method": "GET",
+            "host": "28.0.0.71",
+            "path": "/",
+            "time": "1.356468709s",
+            "a": [
+              "28.0.0.71"
+            ],
+            "tech": [
+              "Python",
+              "React",
+              "Swagger UI",
+              "gunicorn:19.9.0",
+              "jQuery"
+            ],
+            "words": 3473,
+            "lines": 208,
+            "status_code": 200,
+            "content_length": 9593,
+            "failed": false,
+            "knowledgebase": {
+              "PageType": "nonerror",
+              "pHash": 0
+            },
+            "resolvers": [
+              "1.0.0.1:53",
+              "1.1.1.1:53"
+            ]
+          },
+          "timestamp": "2026-06-22T05:04:00.462771+00:00"
+        },
+        {
+          "id": "fnd_ba9eef3d",
+          "type": "service",
+          "severity": "info",
+          "target": "28.0.0.70",
+          "title": "Service: 28.0.0.70:443",
+          "evidence": {
+            "port": "443",
+            "protocol": "https",
+            "service": "gunicorn/19.9.0",
+            "title": "httpbin.org",
+            "tech_stack": [
+              "Python",
+              "React",
+              "Swagger UI",
+              "gunicorn:19.9.0",
+              "jQuery"
+            ],
+            "status_code": 200
+          },
+          "source_tool": "httpx",
+          "raw": {
+            "timestamp": "2026-06-22T13:04:00.455252+08:00",
+            "port": "443",
+            "url": "https://eu.httpbin.org",
+            "input": "eu.httpbin.org",
+            "title": "httpbin.org",
+            "scheme": "https",
+            "webserver": "gunicorn/19.9.0",
+            "content_type": "text/html",
+            "method": "GET",
+            "host": "28.0.0.70",
+            "path": "/",
+            "time": "2.007143625s",
+            "a": [
+              "28.0.0.70"
+            ],
+            "tech": [
+              "Python",
+              "React",
+              "Swagger UI",
+              "gunicorn:19.9.0",
+              "jQuery"
+            ],
+            "words": 3473,
+            "lines": 208,
+            "status_code": 200,
+            "content_length": 9593,
+            "failed": false,
+            "knowledgebase": {
+              "PageType": "nonerror",
+              "pHash": 0
+            },
+            "resolvers": [
+              "8.8.8.8:53",
+              "8.8.4.4:53"
+            ]
+          },
+          "timestamp": "2026-06-22T05:04:00.462786+00:00"
+        }
+      ],
+      "summary": {
+        "total": 3,
+        "by_severity": {
+          "info": 3
+        },
+        "by_type": {
+          "service": 3
+        }
+      },
+      "quota_used": 1
+    },
+    "discover_paths": {
+      "findings": [],
+      "error": "Tool 'ffuf' failed: exit code 2: flag provided but not defined: -max-time\n"
+    },
+    "scan_vulnerabilities": {
+      "findings": [],
+      "error": "Target '28.0.0.69' is not within authorized scope (scope: httpbin.org)"
+    },
+    "passive_recon": {
+      "engagement_id": "eng_7618a944",
+      "tool": "passive_recon",
+      "findings": [
+        {
+          "id": "fnd_bf5b14bc",
+          "type": "intel",
+          "severity": "info",
+          "target": "eu.httpbin.org",
+          "title": "Subdomain discovered via crt.sh: eu.httpbin.org",
+          "evidence": {
+            "source": "crtsh",
+            "domain": "httpbin.org"
+          },
+          "source_tool": "passive_recon",
+          "raw": {},
+          "timestamp": "2026-06-22T05:04:02.287576+00:00",
+          "engagement_id": "eng_7618a944"
+        },
+        {
+          "id": "fnd_fbfc2be5",
+          "type": "intel",
+          "severity": "info",
+          "target": "now.httpbin.org",
+          "title": "Subdomain discovered via crt.sh: now.httpbin.org",
+          "evidence": {
+            "source": "crtsh",
+            "domain": "httpbin.org"
+          },
+          "source_tool": "passive_recon",
+          "raw": {},
+          "timestamp": "2026-06-22T05:04:02.287594+00:00",
+          "engagement_id": "eng_7618a944"
+        },
+        {
+          "id": "fnd_617dfce3",
+          "type": "intel",
+          "severity": "info",
+          "target": "staging.httpbin.org",
+          "title": "Subdomain discovered via crt.sh: staging.httpbin.org",
+          "evidence": {
+            "source": "crtsh",
+            "domain": "httpbin.org"
+          },
+          "source_tool": "passive_recon",
+          "raw": {},
+          "timestamp": "2026-06-22T05:04:02.287602+00:00",
+          "engagement_id": "eng_7618a944"
+        },
+        {
+          "id": "fnd_3051367d",
+          "type": "intel",
+          "severity": "info",
+          "target": "test.httpbin.org",
+          "title": "Subdomain discovered via crt.sh: test.httpbin.org",
+          "evidence": {
+            "source": "crtsh",
+            "domain": "httpbin.org"
+          },
+          "source_tool": "passive_recon",
+          "raw": {},
+          "timestamp": "2026-06-22T05:04:02.287609+00:00",
+          "engagement_id": "eng_7618a944"
+        },
+        {
+          "id": "fnd_86f92ee6",
+          "type": "intel",
+          "severity": "info",
+          "target": "www.httpbin.org",
+          "title": "Subdomain discovered via crt.sh: www.httpbin.org",
+          "evidence": {
+            "source": "crtsh",
+            "domain": "httpbin.org"
+          },
+          "source_tool": "passive_recon",
+          "raw": {},
+          "timestamp": "2026-06-22T05:04:02.287616+00:00",
+          "engagement_id": "eng_7618a944"
+        }
+      ],
+      "summary": {
+        "total": 5,
+        "by_severity": {
+          "info": 5
+        },
+        "by_type": {
+          "intel": 5
+        }
+      },
+      "quota_used": 1
+    },
+    "attack_surface_scan": {
+      "findings": [],
+      "error": "Target '28.0.0.69' is not within authorized scope (scope: httpbin.org)"
+    }
+  },
+  "firing_range": {
+    "enumerate_subdomains": {
+      "engagement_id": "eng_aba94d23",
+      "tool": "enumerate_subdomains",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {
+          "info": 0
+        },
+        "by_type": {
+          "subdomain": 0
+        }
+      },
+      "quota_used": 1
+    },
+    "scan_ports": {
+      "engagement_id": "eng_c9469adc",
+      "tool": "scan_ports",
+      "findings": [
+        {
+          "id": "fnd_1cfffd44",
+          "type": "open_port",
+          "severity": "info",
+          "target": "public-firing-range.appspot.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:05:38.112990+00:00"
+        },
+        {
+          "id": "fnd_9ea33740",
+          "type": "open_port",
+          "severity": "info",
+          "target": "public-firing-range.appspot.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:05:38.113054+00:00"
+        },
+        {
+          "id": "fnd_e68c601c",
+          "type": "open_port",
+          "severity": "info",
+          "target": "public-firing-range.appspot.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:05:38.113070+00:00"
+        },
+        {
+          "id": "fnd_c3ab4c9e",
+          "type": "open_port",
+          "severity": "info",
+          "target": "public-firing-range.appspot.com",
+          "title": "Open port 80/tcp",
+          "evidence": {
+            "port": 80,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:05:38.113086+00:00"
+        },
+        {
+          "id": "fnd_f36d9103",
+          "type": "open_port",
+          "severity": "info",
+          "target": "public-firing-range.appspot.com",
+          "title": "Open port 8080/tcp",
+          "evidence": {
+            "port": 8080,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:05:38.113101+00:00"
+        },
+        {
+          "id": "fnd_8555eb84",
+          "type": "open_port",
+          "severity": "info",
+          "target": "public-firing-range.appspot.com",
+          "title": "Open port 443/tcp",
+          "evidence": {
+            "port": 443,
+            "protocol": "tcp",
+            "service": "",
+            "scan_type": "connect"
+          },
+          "source_tool": "naabu",
+          "raw": {},
+          "timestamp": "2026-06-22T05:05:38.113113+00:00"
+        }
+      ],
+      "summary": {
+        "total": 6,
+        "by_severity": {
+          "info": 6
+        },
+        "by_type": {
+          "open_port": 6
+        }
+      },
+      "quota_used": 1
+    },
+    "probe_services": {
+      "engagement_id": "eng_15f5c87c",
+      "tool": "probe_services",
+      "findings": [
+        {
+          "id": "fnd_11d55513",
+          "type": "service",
+          "severity": "info",
+          "target": "28.0.0.75",
+          "title": "Service: 28.0.0.75:443",
+          "evidence": {
+            "port": "443",
+            "protocol": "https",
+            "service": "Google Frontend",
+            "title": "Firing Range",
+            "tech_stack": [
+              "Google Cloud",
+              "Google Cloud Trace",
+              "HTTP/3"
+            ],
+            "status_code": 200
+          },
+          "source_tool": "httpx",
+          "raw": {
+            "timestamp": "2026-06-22T13:05:39.809852+08:00",
+            "port": "443",
+            "url": "https://public-firing-range.appspot.com",
+            "input": "public-firing-range.appspot.com",
+            "title": "Firing Range",
+            "scheme": "https",
+            "webserver": "Google Frontend",
+            "content_type": "text/html",
+            "method": "GET",
+            "host": "28.0.0.75",
+            "path": "/",
+            "time": "597.072167ms",
+            "a": [
+              "28.0.0.75"
+            ],
+            "tech": [
+              "Google Cloud",
+              "Google Cloud Trace",
+              "HTTP/3"
+            ],
+            "words": 226,
+            "lines": 39,
+            "status_code": 200,
+            "content_length": 1926,
+            "failed": false,
+            "knowledgebase": {
+              "PageType": "nonerror",
+              "pHash": 0
+            },
+            "resolvers": [
+              "1.1.1.1:53",
+              "1.0.0.1:53"
+            ]
+          },
+          "timestamp": "2026-06-22T05:05:39.819561+00:00"
+        }
+      ],
+      "summary": {
+        "total": 1,
+        "by_severity": {
+          "info": 1
+        },
+        "by_type": {
+          "service": 1
+        }
+      },
+      "quota_used": 1
+    },
+    "discover_paths": {
+      "findings": [],
+      "error": "Tool 'ffuf' failed: exit code 2: flag provided but not defined: -max-time\n"
+    },
+    "scan_vulnerabilities": {
+      "findings": [],
+      "error": "Target '28.0.0.75' is not within authorized scope (scope: public-firing-range.appspot.com)"
+    },
+    "passive_recon": {
+      "engagement_id": "eng_2b115f4e",
+      "tool": "passive_recon",
+      "findings": [],
+      "summary": {
+        "total": 0,
+        "by_severity": {},
+        "by_type": {}
+      },
+      "quota_used": 1
+    },
+    "attack_surface_scan": {
+      "findings": [],
+      "error": "Target '28.0.0.75' is not within authorized scope (scope: public-firing-range.appspot.com)"
+    }
+  }
+}

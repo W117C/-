@@ -6,18 +6,13 @@ with summary tables and per-engagement detail sections grouped by severity.
 from __future__ import annotations
 
 import datetime as dt
-from collections import Counter
 from typing import Any
+
+from secagent.report._common import _normalize, _aggregate
 
 # Severity order, highest first. Mirrors core.finding._SEVERITY_RANK but
 # kept local to avoid depending on a private name.
 SEVERITY_ORDER: list[str] = ["critical", "high", "medium", "low", "info"]
-
-
-def _normalize(engagements: Any) -> list[dict]:
-    if isinstance(engagements, dict):
-        return [engagements]
-    return list(engagements)
 
 
 def _render_evidence(ev: dict) -> str:
@@ -25,25 +20,6 @@ def _render_evidence(ev: dict) -> str:
     if not ev:
         return ""
     return ", ".join(f"{k}={v}" for k, v in ev.items())
-
-
-def _aggregate(engagements: list[dict]) -> tuple[Counter, Counter, Counter, list[str], int]:
-    sev: Counter = Counter()
-    typ: Counter = Counter()
-    tool: Counter = Counter()
-    tools_used: list[str] = []
-    total = 0
-    for eng in engagements:
-        tool_name = eng.get("tool", "")
-        if tool_name and tool_name not in tools_used:
-            tools_used.append(tool_name)
-        findings = eng.get("findings", []) or []
-        total += len(findings)
-        tool[tool_name] += len(findings)
-        for f in findings:
-            sev[f.get("severity", "info")] += 1
-            typ[f.get("type", "")] += 1
-    return sev, typ, tool, tools_used, total
 
 
 def render_markdown(engagements: Any) -> str:

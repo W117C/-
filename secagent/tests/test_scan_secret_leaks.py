@@ -6,13 +6,11 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from secagent.adapters.gitleaks import GitleaksAdapter, _redact
-from secagent.core.authz import AuthorizationScope, ScopeType
+from secagent.core.authz import ScopeType
 from secagent.core.errors import InvalidInputError, NotAuthorizedError, ToolFailedError
 from secagent.core.finding import Finding, FindingType, Severity
-from secagent.core.gate import ComplianceGate
-from secagent.core.registry import AuthorizationRegistry
-from secagent.storage.sqlite_store import SQLiteStore
 from secagent.tools.scan_secret_leaks import scan_secret_leaks
+from helper import setup_gate_and_token
 
 
 # ---------------------------------------------------------------------------
@@ -64,15 +62,6 @@ _PLAINTEXTS = [
     "AKIAIOSFODNN7EXAMPLE",
     "ghp_abcdefghijklmnopqrstuvwx",
 ]
-
-
-def _setup_gate_and_token(tmp_db, scope_value="github.com/acme/webapp", scope_type=ScopeType.REPO):
-    store = SQLiteStore(tmp_db); store.bootstrap()
-    reg = AuthorizationRegistry(store, default_quota=100)
-    token = reg.issue(scope=AuthorizationScope(scope_type, scope_value))
-    reg.mark_verified(token, method="dns_txt")
-    gate = ComplianceGate(store, reg.quota, default_quota=100)
-    return gate, token
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +283,7 @@ def test_adapter_default_mode_is_github():
 # ---------------------------------------------------------------------------
 
 def test_tool_returns_findings_for_authorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db, scope_type=ScopeType.REPO, scope_value="github.com/acme/webapp")
     with patch("secagent.tools.scan_secret_leaks.GitleaksAdapter") as MockAdapter:
         mock_instance = MagicMock()
         # Build real Finding objects so .to_dict() works in the tool function.
@@ -330,7 +319,7 @@ def test_tool_returns_findings_for_authorized_target(tmp_db):
 
 
 def test_tool_rejects_unauthorized_target(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db, scope_value="github.com/acme/webapp")
+    gate, token = setup_gate_and_token(tmp_db, scope_type=ScopeType.REPO, scope_value="github.com/acme/webapp")
     with pytest.raises(NotAuthorizedError):
         scan_secret_leaks(
             gate=gate,
@@ -341,7 +330,7 @@ def test_tool_rejects_unauthorized_target(tmp_db):
 
 
 def test_tool_missing_scope_raises_invalid_input(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db, scope_type=ScopeType.REPO, scope_value="github.com/acme/webapp")
     # The tool function validates scope presence before calling the gate, so
     # no authorization is consumed and no adapter runs.
     with pytest.raises(InvalidInputError):
@@ -355,7 +344,7 @@ def test_tool_missing_scope_raises_invalid_input(tmp_db):
 
 def test_tool_redaction_propagates_to_output(tmp_db):
     """End-to-end: real adapter with mocked launch → tool output has no plaintext."""
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db, scope_type=ScopeType.REPO, scope_value="github.com/acme/webapp")
     stdout = json.dumps(_canned_gitleaks_json())
     # Patch the Launcher the tool function constructs (imported into the tools
     # module), not the one in the adapter module.
@@ -385,7 +374,7 @@ def test_tool_redaction_propagates_to_output(tmp_db):
 
 
 def test_tool_empty_result_still_commits(tmp_db):
-    gate, token = _setup_gate_and_token(tmp_db)
+    gate, token = setup_gate_and_token(tmp_db, scope_type=ScopeType.REPO, scope_value="github.com/acme/webapp")
     with patch("secagent.tools.scan_secret_leaks.GitleaksAdapter") as MockAdapter:
         mock_instance = MagicMock()
         mock_instance.run.return_value = []
@@ -404,7 +393,7 @@ def test_tool_empty_result_still_commits(tmp_db):
 
 def test_tool_target_subpath_under_scope_is_authorized(tmp_db):
     """REPO scope check allows target == scope.value/<anything>."""
-    gate, token = _setup_gate_and_token(tmp_db, scope_value="github.com/acme/webapp")
+    gate, token = setup_gate_and_token(tmp_db, scope_type=ScopeType.REPO, scope_value="github.com/acme/webapp")
     with patch("secagent.tools.scan_secret_leaks.GitleaksAdapter") as MockAdapter:
         mock_instance = MagicMock()
         mock_instance.run.return_value = []

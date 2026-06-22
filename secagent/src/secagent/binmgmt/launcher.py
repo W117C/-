@@ -15,7 +15,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from secagent.core.proxy import PROXY_FLAG_TOOLS, ENV_PROXY_TOOLS, ProxyManager
 

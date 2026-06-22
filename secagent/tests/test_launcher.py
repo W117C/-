@@ -5,7 +5,7 @@ import pytest
 import subprocess
 from unittest.mock import patch, MagicMock
 
-from secagent.binmgmt.launcher import Launcher, LaunchResult
+from secagent.binmgmt.launcher import Launcher
 from secagent.core.errors import ToolFailedError, ToolTimeoutError
 
 

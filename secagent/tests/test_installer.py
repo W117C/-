@@ -6,7 +6,6 @@ import os
 import stat
 from unittest.mock import patch
 import tarfile
-import tempfile
 import zipfile
 from pathlib import Path
 

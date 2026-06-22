@@ -19,7 +19,7 @@ import uuid
 import datetime as dt
 import urllib.error
 import urllib.request
-from typing import Any, Callable
+from typing import Any
 
 from secagent.adapters.base import BaseAdapter
 from secagent.core.errors import InvalidInputError, ToolFailedError

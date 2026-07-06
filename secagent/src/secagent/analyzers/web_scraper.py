@@ -15,7 +15,7 @@ import random
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 
 # ==========================================================================
@@ -199,7 +199,6 @@ def generate_mouse_trace(
     Returns:
         [{"x": ..., "y": ..., "timestamp": ...}, ...] 轨迹序列。
     """
-    import math
     trace = []
     for i in range(steps + 1):
         t = i / steps

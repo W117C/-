@@ -6,7 +6,6 @@ extracts exposure signals (forms, JS endpoints, emails, comments).
 from __future__ import annotations
 
 from typing import Any
-from urllib.parse import urlparse
 
 from secagent.adapters.simple_crawler import SimpleCrawlerAdapter
 from secagent.core.decorators import gated_tool

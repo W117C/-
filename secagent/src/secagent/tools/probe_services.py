@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import os
 from typing import Any
-from uuid import uuid4
 
 from secagent.adapters.httpx_adapter import HttpxAdapter
 from secagent.binmgmt.launcher import Launcher

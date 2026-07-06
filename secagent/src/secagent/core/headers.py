@@ -5,10 +5,9 @@ User-Agent 轮换等功能，用于绕过 WAF/CDN 和伪造请求。
 """
 from __future__ import annotations
 
-import json
 import random
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 

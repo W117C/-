@@ -420,6 +420,16 @@ def all_tools() -> list[ToolDefinition]:
             input_schema=_INSPECT_TOKEN_SCHEMA,
             handler=_handle_inspect_token,
         ),
+        ToolDefinition(
+            name="analyze_binary",
+            description=(
+                "Analyze native binaries: structure inspection (PE/ELF/Mach-O), "
+                "symbol-aware disassembly, string extraction, and packing "
+                "detection. Supports analyze/disasm/strings/packing operations."
+            ),
+            input_schema=_ANALYZE_BINARY_SCHEMA,
+            handler=_handle_analyze_binary,
+        ),
     ]
 
 
@@ -716,8 +726,8 @@ def _handle_decode_value(
 ) -> dict[str, Any]:
     """Auto-detect encoding and decode."""
     from secagent.core.decoders import (
-        detect_encoding, try_decode, auto_decode, hash_text,
-        analyze_timestamp, generate_timestamp, decode_jwt,
+        detect_encoding, auto_decode, hash_text,
+        analyze_timestamp, decode_jwt,
     )
 
     operation = args.get("operation", "auto_decode")
@@ -913,4 +923,89 @@ _INSPECT_TOKEN_SCHEMA: dict[str, Any] = {
         },
     },
     "required": ["operation", "token"],
+}
+# ---------------------------------------------------------------------------
+# Binary reverse engineering (analyzers → MCP)
+# ---------------------------------------------------------------------------
+
+def _handle_analyze_binary(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Analyze binary files: structure, disassembly, strings, packing."""
+    operation = args.get("operation", "analyze")
+    file_path = args.get("file_path", "")
+
+    if not file_path:
+        return {"type": "error", "message": "file_path is required"}
+
+    if operation == "analyze":
+        from secagent.analyzers.binary_analyzer import analyze_binary
+        return {"type": "binary_analysis", **analyze_binary(file_path)}
+
+    elif operation == "disasm":
+        from secagent.analyzers.binary_analyzer import disassemble_function
+        kwargs: dict[str, Any] = {}
+        if args.get("address") is not None:
+            kwargs["address"] = int(args["address"])
+        if args.get("symbol"):
+            kwargs["symbol"] = args["symbol"]
+        kwargs["count"] = args.get("count", 32)
+        result = disassemble_function(file_path, **kwargs)
+        return {"type": "disassembly", "instructions": result}
+
+    elif operation == "strings":
+        from secagent.analyzers.binary_analyzer import extract_strings
+        result = extract_strings(
+            file_path,
+            min_length=args.get("min_length", 4),
+            limit=args.get("limit", 500),
+        )
+        return {"type": "strings", "count": len(result), "strings": result}
+
+    elif operation == "packing":
+        from secagent.analyzers.binary_analyzer import detect_packing
+        result = detect_packing(file_path)
+        return {"type": "packing_analysis", **result}
+
+    else:
+        return {"type": "error", "message": f"Unknown operation: {operation}"}
+
+
+_ANALYZE_BINARY_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "operation": {
+            "type": "string",
+            "enum": ["analyze", "disasm", "strings", "packing"],
+            "description": "Binary analysis operation type.",
+        },
+        "file_path": {
+            "type": "string",
+            "description": "Path to the binary file to analyze.",
+        },
+        "address": {
+            "type": "integer",
+            "description": "Virtual address to disassemble from (disasm operation).",
+        },
+        "symbol": {
+            "type": "string",
+            "description": "Symbol name to disassemble (disasm operation, alternative to address).",
+        },
+        "count": {
+            "type": "integer",
+            "default": 32,
+            "description": "Number of instructions to disassemble.",
+        },
+        "min_length": {
+            "type": "integer",
+            "default": 4,
+            "description": "Minimum string length for string extraction.",
+        },
+        "limit": {
+            "type": "integer",
+            "default": 500,
+            "description": "Maximum number of strings to return.",
+        },
+    },
+    "required": ["operation", "file_path"],
 }

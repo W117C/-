@@ -58,6 +58,12 @@ from secagent.analyzers.traffic_analyzer import (
     analyze_traffic_flow,
     parse_har,
 )
+from secagent.analyzers.binary_analyzer import (
+    analyze_binary,
+    detect_packing,
+    disassemble_function,
+    extract_strings,
+)
 from secagent.analyzers.web_scraper import (
     RequestInterceptor,
     ScraperConfig,
@@ -83,4 +89,5 @@ __all__ = [
     "HTTPEntry", "RequestChain", "analyze_traffic_flow", "parse_har",
     "RequestInterceptor", "ScraperConfig", "SessionManager",
     "generate_mouse_trace", "generate_typing_delay",
+    "analyze_binary", "disassemble_function", "extract_strings", "detect_packing",
 ]

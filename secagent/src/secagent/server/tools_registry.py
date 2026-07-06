@@ -392,6 +392,34 @@ def all_tools() -> list[ToolDefinition]:
             input_schema=_CHECK_HEALTH_SCHEMA,
             handler=_handle_check_health,
         ),
+        ToolDefinition(
+            name="decode_value",
+            description=(
+                "Auto-detect encoding and decode data. Supports base64, hex, "
+                "URL, JWT, timestamps, and hash computation. For reversing "
+                "encoded payloads found in JS, API responses, or network traffic."
+            ),
+            input_schema=_DECODE_VALUE_SCHEMA,
+            handler=_handle_decode_value,
+        ),
+        ToolDefinition(
+            name="analyze_web",
+            description=(
+                "Analyze web artifacts: JS deobfuscation, API signature analysis, "
+                "header/WAF fingerprinting, and URL parameter inspection."
+            ),
+            input_schema=_ANALYZE_WEB_SCHEMA,
+            handler=_handle_analyze_web,
+        ),
+        ToolDefinition(
+            name="inspect_token",
+            description=(
+                "Inspect authentication tokens: JWT decode, cookie analysis, "
+                "token type detection, and security assessment."
+            ),
+            input_schema=_INSPECT_TOKEN_SCHEMA,
+            handler=_handle_inspect_token,
+        ),
     ]
 
 
@@ -676,4 +704,213 @@ _SCAN_VULNERABILITIES_SCHEMA: dict[str, Any] = {
         "caller_id": {"type": "string"},
     },
     "required": ["targets", "authz_token"],
+}
+
+
+# ---------------------------------------------------------------------------
+# Web Reverse Engineering tools (analyzers → MCP)
+# ---------------------------------------------------------------------------
+
+def _handle_decode_value(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Auto-detect encoding and decode."""
+    from secagent.core.decoders import (
+        detect_encoding, try_decode, auto_decode, hash_text,
+        analyze_timestamp, generate_timestamp, decode_jwt,
+    )
+
+    operation = args.get("operation", "auto_decode")
+    data = args.get("data", "")
+
+    if operation == "auto_decode":
+        layers = auto_decode(data, max_depth=args.get("max_depth", 3))
+        return {"type": "decode_result", "layers": layers, "final": layers[-1]["result"] if layers else data}
+    elif operation == "detect":
+        return {"type": "detect_result", "encodings": detect_encoding(data)}
+    elif operation == "hash":
+        algo = args.get("algorithm", "sha256")
+        return {"type": "hash_result", "algorithm": algo, "hash": hash_text(data, algo)}
+    elif operation == "timestamp":
+        ts = analyze_timestamp(data)
+        return {"type": "timestamp_result", **ts}
+    elif operation == "jwt_decode":
+        result = decode_jwt(data)
+        return {"type": "jwt_result", "valid": result is not None, "decoded": result}
+    else:
+        return {"type": "error", "message": f"Unknown operation: {operation}"}
+
+
+_DECODE_VALUE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "operation": {
+            "type": "string",
+            "enum": ["auto_decode", "detect", "hash", "timestamp", "jwt_decode"],
+            "description": "Decode operation type.",
+        },
+        "data": {
+            "type": "string",
+            "description": "Data to decode/analyze.",
+        },
+        "algorithm": {
+            "type": "string",
+            "description": "Hash algorithm for hash operation (md5/sha1/sha256/sha512).",
+        },
+        "max_depth": {
+            "type": "integer",
+            "default": 3,
+            "description": "Max decode layers for auto_decode.",
+        },
+    },
+    "required": ["operation", "data"],
+}
+
+
+def _handle_analyze_web(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Analyze JS code, API signatures, or HTTP headers."""
+    operation = args.get("operation", "js_analyze")
+    data = args.get("data", "")
+
+    if operation == "js_analyze":
+        from secagent.analyzers.js_reverser import (
+            beautify, detect_obfuscation, extract_sensitive,
+        )
+        return {
+            "type": "js_analysis",
+            "obfuscation": detect_obfuscation(data),
+            "sensitive": extract_sensitive(data),
+            "beautified_preview": beautify(data)[:500],
+        }
+    elif operation == "api_signature":
+        from secagent.analyzers.api_signer import (
+            classify_params, detect_signature_params, build_sign_string, SignatureConfig,
+        )
+        import json
+        params = json.loads(args.get("params_json", "{}"))
+        sig_params = detect_signature_params(params)
+        classified = classify_params(params)
+        config = SignatureConfig(algorithm=args.get("algorithm", "md5"))
+        sign_str = build_sign_string(params, config)
+        return {
+            "type": "api_signature",
+            "signature_params": sig_params,
+            "classified": classified,
+            "sign_string": sign_str,
+        }
+    elif operation == "header_fingerprint":
+        from secagent.core.headers import fingerprint_headers, parse_ua
+        import json
+        headers = json.loads(args.get("headers_json", "{}"))
+        wafs = fingerprint_headers(headers)
+        ua_info = {}
+        if "User-Agent" in headers:
+            ua_info = parse_ua(headers["User-Agent"])
+        return {
+            "type": "header_fingerprint",
+            "wafs": wafs,
+            "ua_info": ua_info,
+        }
+    elif operation == "url_params":
+        from secagent.core.headers import analyze_url_params
+        result = analyze_url_params(data)
+        return {"type": "url_params", **result}
+    else:
+        return {"type": "error", "message": f"Unknown operation: {operation}"}
+
+
+_ANALYZE_WEB_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "operation": {
+            "type": "string",
+            "enum": ["js_analyze", "api_signature", "header_fingerprint", "url_params"],
+            "description": "Analysis operation type.",
+        },
+        "data": {
+            "type": "string",
+            "description": "Data to analyze (JS code, URL, or raw text).",
+        },
+        "params_json": {
+            "type": "string",
+            "description": "JSON-encoded parameters for api_signature operation.",
+        },
+        "headers_json": {
+            "type": "string",
+            "description": "JSON-encoded HTTP headers for header_fingerprint operation.",
+        },
+        "algorithm": {
+            "type": "string",
+            "description": "Signature algorithm hint for api_signature.",
+        },
+    },
+    "required": ["operation"],
+}
+
+
+def _handle_inspect_token(
+    gate: ComplianceGate, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Analyze cookies, JWT tokens, and authentication tokens."""
+    from secagent.analyzers.cookie_analyzer import (
+        detect_token_type, analyze_jwt, analyze_cookie,
+        analyze_jwt_claims, assess_token_security,
+    )
+
+    operation = args.get("operation", "detect")
+    token = args.get("token", "")
+
+    if operation == "detect":
+        types = detect_token_type(token)
+        return {"type": "token_detect", "token_types": types}
+    elif operation == "jwt":
+        result = analyze_jwt(token)
+        claims = {}
+        if result.payload and isinstance(result.payload, dict):
+            claims = analyze_jwt_claims(result.payload)
+        return {
+            "type": "jwt_analysis",
+            "valid": result.valid_structure,
+            "algorithm": result.algorithm,
+            "subject": result.subject,
+            "issued_at": result.issued_at,
+            "claims": claims,
+        }
+    elif operation == "cookie":
+        name = args.get("cookie_name", "")
+        result = analyze_cookie(name, token)
+        return {
+            "type": "cookie_analysis",
+            "name": result.name,
+            "is_auth": result.is_auth,
+            "is_session": result.is_session,
+            "token_type": result.token_type,
+        }
+    elif operation == "security":
+        result = assess_token_security(token)
+        return {"type": "security_assessment", **result}
+    else:
+        return {"type": "error", "message": f"Unknown operation: {operation}"}
+
+
+_INSPECT_TOKEN_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "operation": {
+            "type": "string",
+            "enum": ["detect", "jwt", "cookie", "security"],
+            "description": "Token inspection operation.",
+        },
+        "token": {
+            "type": "string",
+            "description": "Token/JWT string to analyze.",
+        },
+        "cookie_name": {
+            "type": "string",
+            "description": "Cookie name (for cookie operation).",
+        },
+    },
+    "required": ["operation", "token"],
 }

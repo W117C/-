@@ -64,4 +64,5 @@ class Config:
             wordlists_dir=os.environ.get(
                 "SECAGENT_WORDLISTS_DIR", tools_block.get("wordlists_dir", "./wordlists")),
             proxy=proxy_cfg,
+            extra=data.get("extra", {}) or {},
         )

@@ -23,4 +23,7 @@ __all__ = [
     "Severity",
     "ToolFailedError",
     "ToolTimeoutError",
+    "gated_tool",
+    "standard_adapter_tool",
 ]
+from secagent.core.decorators import gated_tool, standard_adapter_tool  # noqa: E402, F401

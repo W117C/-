@@ -14,42 +14,39 @@ Contract:
 from __future__ import annotations
 
 import os
-import uuid
 from typing import Any
+from uuid import uuid4
 
 from secagent.adapters.httpx_adapter import HttpxAdapter
 from secagent.binmgmt.launcher import Launcher
+from secagent.core.decorators import gated_tool
 from secagent.core.errors import InvalidInputError
 from secagent.core.finding import Finding
 from secagent.core.gate import ComplianceGate
 
 
+@gated_tool(tool_name="probe_services", target_field="targets")
 def probe_services(
     *,
     gate: ComplianceGate,
     params: dict[str, Any],
     authz_token: str,
     caller_id: str = "unknown",
-) -> dict[str, Any]:
+) -> list[Finding]:
     """Run httpx live probe through the compliance gate.
 
-    Returns the unified output structure (spec §3.1):
-    { engagement_id, tool, findings, summary, quota_used }
+    Returns list[Finding] — the @gated_tool decorator handles the rest.
     """
     targets = params.get("targets", [])
     if not targets or not isinstance(targets, list):
         raise InvalidInputError(field="targets", reason="must be a non-empty list")
 
-    tool_name = "probe_services"
-
-    # Pre-flight: compliance gate check for EVERY target (authz + blocklist).
-    # If any target is out of scope, refuse the entire call before running
-    # the adapter — no partial probing.
-    last_scope = None
+    # Pre-flight: compliance gate check for EVERY target. If any target is out
+    # of scope, the first gate.check() call raises before any probe runs.
     for target in targets:
-        last_scope = gate.check(
+        gate.check(
             token=authz_token,
-            tool=tool_name,
+            tool="probe_services",
             target=target,
             caller_id=caller_id,
         )
@@ -62,28 +59,5 @@ def probe_services(
     )
     findings = adapter.run(params)
 
-    # Build response
-    engagement_id = f"eng_{uuid.uuid4().hex}"
-    findings_dicts = [f.to_dict() for f in findings]
-    for fd in findings_dicts:
-        fd["engagement_id"] = engagement_id
-
-    # Post-run: commit findings + decrement quota (one unit per call)
-    gate.commit_findings(
-        token=authz_token,
-        count=len(findings),
-        quota_used=1,
-        caller_id=caller_id,
-        tool=tool_name,
-        target=",".join(targets),
-        scope_value=last_scope.value if last_scope else None,
-        findings=findings_dicts,
-    )
-
-    return {
-        "engagement_id": engagement_id,
-        "tool": tool_name,
-        "findings": [f.to_dict() for f in findings],
-        "summary": Finding.summary(findings),
-        "quota_used": 1,
-    }
+    # The decorator wraps this return value with the standard boilerplate
+    return findings

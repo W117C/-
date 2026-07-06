@@ -1,79 +1,40 @@
 """Tool function: crawl_target (spec §3.2 ⑥).
 
-Wires SimpleCrawlerAdapter through ComplianceGate. The MCP server exposes this
-as a tool; tests call it directly.
-
-Contract:
-  - caller MUST supply a valid authz_token whose scope covers the URL's host.
-  - the compliance gate checks authorization, blocklist, and quota.
-  - adapter runs after gate.check() passes.
-  - gate.commit_findings() is called after the adapter returns.
-
-Scope handling:
-  - `target` is a URL like "https://acme.com/path".
-  - The ComplianceGate checks scope against the host (e.g. "acme.com"), so we
-    extract the hostname via urllib.parse.urlparse before calling gate.check().
+Wires SimpleCrawlerAdapter through ComplianceGate. Crawls a single URL and
+extracts exposure signals (forms, JS endpoints, emails, comments).
 """
 from __future__ import annotations
 
-import uuid
 from typing import Any
 from urllib.parse import urlparse
 
 from secagent.adapters.simple_crawler import SimpleCrawlerAdapter
+from secagent.core.decorators import gated_tool
+from secagent.core.errors import InvalidInputError
 from secagent.core.finding import Finding
 from secagent.core.gate import ComplianceGate
 
 
+@gated_tool(tool_name="crawl_target", target_field="target")
 def crawl_target(
     *,
     gate: ComplianceGate,
     params: dict[str, Any],
     authz_token: str,
     caller_id: str = "unknown",
-) -> dict[str, Any]:
+) -> list[Finding]:
     """Run the built-in single-page HTTP crawler through the compliance gate.
 
-    Returns the unified output structure (spec §3.1):
-      { engagement_id, tool, findings, summary, quota_used }
+    The @gated_tool decorator handles gate.check, commit_findings,
+    engagement_id, and the return dict. This function only needs to
+    create the adapter and run it.
     """
     target = params.get("target", "")
-    tool_name = "crawl_target"
-
-    # The scope is domain-based; gate.check compares against the host, not the
-    # full URL. urlparse(...).hostname lowercases and strips the port.
-    host = urlparse(target).hostname or target
-    scope = gate.check(
-        token=authz_token,
-        tool=tool_name,
-        target=host,
-        caller_id=caller_id,
-    )
+    if not target or not isinstance(target, str):
+        raise InvalidInputError(field="target", reason="must be a non-empty URL")
+    if not (target.startswith("http://") or target.startswith("https://")):
+        raise InvalidInputError(field="target", reason="must be http/https URL")
 
     adapter = SimpleCrawlerAdapter(timeout_sec=params.get("timeout_sec", 30))
-    findings: list[Finding] = adapter.run(params)
-
-    # Build response
-    engagement_id = f"eng_{uuid.uuid4().hex}"
-    findings_dicts = [f.to_dict() for f in findings]
-    for fd in findings_dicts:
-        fd["engagement_id"] = engagement_id
-
-    gate.commit_findings(
-        token=authz_token,
-        count=len(findings),
-        quota_used=1,
-        caller_id=caller_id,
-        tool=tool_name,
-        target=target,
-        scope_value=scope.value,
-        findings=findings_dicts,
-    )
-
-    return {
-        "engagement_id": engagement_id,
-        "tool": tool_name,
-        "findings": [f.to_dict() for f in findings],
-        "summary": Finding.summary(findings),
-        "quota_used": 1,
-    }
+    findings = adapter.run(params)
+    return findings

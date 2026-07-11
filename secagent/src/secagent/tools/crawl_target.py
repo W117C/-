@@ -34,6 +34,9 @@ def crawl_target(
     if not (target.startswith("http://") or target.startswith("https://")):
         raise InvalidInputError(field="target", reason="must be http/https URL")
 
-    adapter = SimpleCrawlerAdapter(timeout_sec=params.get("timeout_sec", 30))
+    adapter = SimpleCrawlerAdapter(
+        timeout_sec=params.get("timeout_sec", 30),
+        proxy_manager=gate.proxy_manager,
+    )
     findings = adapter.run(params)
     return findings

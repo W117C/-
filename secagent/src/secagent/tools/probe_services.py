@@ -53,7 +53,8 @@ def probe_services(
     # Execute: adapter
     binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = HttpxAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120),
+                          proxy_manager=gate.proxy_manager),
         binaries_dir=binaries_dir,
     )
     findings = adapter.run(params)

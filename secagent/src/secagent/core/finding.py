@@ -35,16 +35,16 @@ class Severity(str, Enum):
     # ordering reflects severity rank (info < low < ... < critical), not the
     # lexicographic string order ("critical" < "high" < ... would be wrong).
 
-    def __lt__(self, other: "Severity") -> bool:
+    def __lt__(self, other: Severity) -> bool:
         return _SEVERITY_RANK[self] < _SEVERITY_RANK[other]
 
-    def __le__(self, other: "Severity") -> bool:
+    def __le__(self, other: Severity) -> bool:
         return _SEVERITY_RANK[self] <= _SEVERITY_RANK[other]
 
-    def __gt__(self, other: "Severity") -> bool:
+    def __gt__(self, other: Severity) -> bool:
         return _SEVERITY_RANK[self] > _SEVERITY_RANK[other]
 
-    def __ge__(self, other: "Severity") -> bool:
+    def __ge__(self, other: Severity) -> bool:
         return _SEVERITY_RANK[self] >= _SEVERITY_RANK[other]
 
 
@@ -68,6 +68,8 @@ class Finding:
     source_tool: str = ""
     raw: dict[str, Any] = field(default_factory=dict)
     timestamp: dt.datetime = field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+    confidence: str = "unvalidated"  # validated | likely | unvalidated | false_positive
+    remediation: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,10 +82,12 @@ class Finding:
             "source_tool": self.source_tool,
             "raw": self.raw,
             "timestamp": self.timestamp.isoformat(),
+            "confidence": self.confidence,
+            "remediation": self.remediation,
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "Finding":
+    def from_dict(cls, d: dict[str, Any]) -> Finding:
         return cls(
             id=d["id"],
             type=FindingType(d["type"]),
@@ -94,10 +98,12 @@ class Finding:
             source_tool=d.get("source_tool", ""),
             raw=d.get("raw", {}),
             timestamp=dt.datetime.fromisoformat(d["timestamp"]),
+            confidence=d.get("confidence", "unvalidated"),
+            remediation=d.get("remediation", ""),
         )
 
     @staticmethod
-    def summary(findings: list["Finding"]) -> dict[str, Any]:
+    def summary(findings: list[Finding]) -> dict[str, Any]:
         sev = Counter(f.severity.value for f in findings)
         typ = Counter(f.type.value for f in findings)
         return {

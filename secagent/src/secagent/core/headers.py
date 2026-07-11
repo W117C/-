@@ -10,7 +10,6 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # User-Agent 池
 # ---------------------------------------------------------------------------
@@ -86,7 +85,7 @@ def random_ua(category: str | None = None) -> str:
 
     Args:
         category: 设备/浏览器类别。
-                  None 表示所有类别中随机；
+                  None 表示所有浏览器类别中随机（不含 bot 类别）；
                   可选: chrome_mac, chrome_win, firefox_mac, safari, mobile, bot
 
     Returns:
@@ -94,7 +93,9 @@ def random_ua(category: str | None = None) -> str:
     """
     if category and category in _UA_POOL:
         return random.choice(_UA_POOL[category])
-    all_uas = [ua for uas in _UA_POOL.values() for ua in uas]
+    # General random: exclude bot pool (different format, used for crawler detection)
+    browser_pools = [uas for cat, uas in _UA_POOL.items() if cat != "bot"]
+    all_uas = [ua for uas in browser_pools for ua in uas]
     return random.choice(all_uas)
 
 
@@ -143,12 +144,6 @@ def parse_ua(ua: str) -> dict[str, Any]:
         result["os"] = "Windows"
     elif "Linux" in ua and "Android" not in ua:
         result["os"] = "Linux"
-    elif "Android" in ua:
-        result["os"] = "Android"
-        result["device"] = "mobile"
-    elif "iPhone" in ua or "iPad" in ua:
-        result["os"] = "iOS"
-        result["device"] = "mobile"
 
     return result
 

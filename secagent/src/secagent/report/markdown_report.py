@@ -8,7 +8,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any
 
-from secagent.report._common import _normalize, _aggregate
+from secagent.report._common import _aggregate, _normalize
 
 # Severity order, highest first. Mirrors core.finding._SEVERITY_RANK but
 # kept local to avoid depending on a private name.
@@ -97,10 +97,24 @@ def render_markdown(engagements: Any) -> str:
             for f in group:
                 target = f.get("target", "")
                 title = f.get("title", "")
-                lines.append(f"- **{target}** — {title}")
+                confidence = f.get("confidence", "")
+                remediation = f.get("remediation", "")
+
+                # Confidence badge
+                {
+                    "validated": "✅",
+                    "likely": "🟡",
+                    "unvalidated": "⚪",
+                    "false_positive": "❌",
+                }.get(confidence, "⚪")
+                badge_str = f" `[{confidence}]`" if confidence else ""
+
+                lines.append(f"- **{target}** — {title}{badge_str}")
                 ev = f.get("evidence", {})
                 if ev:
                     lines.append(f"  - 证据: {_render_evidence(ev)}")
+                if remediation:
+                    lines.append(f"  - 修复: {remediation}")
             lines.append("")
 
     # ----- Appendix -----

@@ -13,7 +13,6 @@ import urllib.parse
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # 常见的签名参数名称
 _SIGNATURE_PARAM_NAMES = {
     "sign", "sig", "signature", "_sign", "_sig",
@@ -181,19 +180,19 @@ class RequestReplayer:
     def __init__(self, captured: CapturedRequest):
         self._captured = captured
 
-    def modify_param(self, key: str, value: str) -> "RequestReplayer":
+    def modify_param(self, key: str, value: str) -> RequestReplayer:
         self._captured.params[key] = value
         return self
 
-    def modify_header(self, key: str, value: str) -> "RequestReplayer":
+    def modify_header(self, key: str, value: str) -> RequestReplayer:
         self._captured.headers[key] = value
         return self
 
-    def modify_body(self, body: str | dict[str, Any]) -> "RequestReplayer":
+    def modify_body(self, body: str | dict[str, Any]) -> RequestReplayer:
         self._captured.body = body
         return self
 
-    def remove_param(self, key: str) -> "RequestReplayer":
+    def remove_param(self, key: str) -> RequestReplayer:
         self._captured.params.pop(key, None)
         return self
 
@@ -220,7 +219,7 @@ def analyze_api_auth(captured: CapturedRequest) -> dict[str, Any]:
     sign_analysis: list[dict[str, Any]] = []
     for sp in sig_params:
         sp_val = params[sp]
-        from secagent.core.decoders import detect_encoding, auto_decode, analyze_timestamp
+        from secagent.core.decoders import analyze_timestamp, auto_decode, detect_encoding
         encodings = detect_encoding(sp_val)
         decoded_layers = auto_decode(sp_val, max_depth=2)
         is_ts = bool(sp_val.isdigit() and len(sp_val) >= 10)

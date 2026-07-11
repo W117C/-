@@ -11,18 +11,41 @@ Every tool function follows the same pattern:
 
 This decorator handles steps 1-2 and 4-7, so each tool function only
 needs to write step 3 (the adapter-specific logic).
+
+**Error handling**: Business-domain errors (SecAgentError subclasses:
+``NotAuthorizedError``, ``InvalidInputError``, etc.) propagate as
+exceptions — they carry structured error codes that the MCP server
+layer translates into proper error responses.
+
+Unexpected infrastructure failures (DB crash, disk full, adapter
+crash, OSError, etc.) are caught and returned as structured error
+envelopes so they never leak raw tracebacks to the MCP client.
 """
 from __future__ import annotations
 
 import functools
+import logging
 import os
+import uuid
 from collections import Counter
 from typing import Any, Callable, Union
 
 from secagent.binmgmt.launcher import Launcher
-from secagent.core.errors import InvalidInputError
+from secagent.core.errors import InvalidInputError, SecAgentError
 from secagent.core.finding import Finding
 from secagent.core.gate import ComplianceGate
+
+log = logging.getLogger(__name__)
+
+
+def _error_envelope(message: str, tool_name: str, code: str = "TOOL_FAILED") -> dict[str, Any]:
+    """Return a structured error envelope matching ``to_error_dict()`` format."""
+    return {
+        "error": {"code": code, "message": message, "retryable": False},
+        "tool": tool_name,
+        "findings": [],
+        "summary": {"total": 0},
+    }
 
 # Type: a tool function returns either list[Finding] or a dict override
 ToolFn = Callable[..., Union[list[Finding], list[dict[str, Any]], dict[str, Any]]]
@@ -71,7 +94,7 @@ def _findings_to_dicts(
     findings: list,
 ) -> list[dict[str, Any]]:
     """Convert findings to dicts using duck-typing (supports Finding, Mock, or dict)."""
-    result: list = []
+    result: list[dict[str, Any]] = []
     for f in findings:
         to_dict = getattr(f, "to_dict", None)
         if callable(to_dict):
@@ -84,6 +107,49 @@ def _findings_to_dicts(
 def _tag_engagement(findings: list[dict[str, Any]], engagement_id: str) -> None:
     for fd in findings:
         fd["engagement_id"] = engagement_id
+
+
+def _commit_and_build_result(
+    findings: list,
+    gate: ComplianceGate,
+    token: str,
+    count: int,
+    quota_used: int,
+    caller_id: str,
+    tool_name: str,
+    target,
+    scope_value,
+) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
+    """Commit findings + build unified return (shared by decorator + manual tools).
+
+    Returns (engagement_id, findings_dicts, summary).
+    """
+    engagement_id = f"eng_{uuid.uuid4().hex}"
+    findings_list = list(findings) if findings else []
+    findings_dicts = _findings_to_dicts(findings_list)
+    _tag_engagement(findings_dicts, engagement_id)
+    try:
+        gate.commit_findings(
+            token=token,
+            count=count,
+            quota_used=quota_used,
+            caller_id=caller_id,
+            tool=tool_name,
+            target=target,
+            scope_value=scope_value,
+            findings=findings_dicts,
+        )
+    except SecAgentError:
+        raise
+    except Exception as e:
+        log.error("commit_and_build_result[%s] commit_findings failed: %s", tool_name, e)
+    finding_objs = [f for f in findings_list if isinstance(f, Finding)]
+    summary = (
+        Finding.summary(finding_objs)
+        if finding_objs
+        else _summary_from_dicts(findings_dicts)
+    )
+    return engagement_id, findings_dicts, summary
 
 
 def gated_tool(
@@ -108,6 +174,11 @@ def gated_tool(
     it is assumed to be a pre-built return dict and is passed through
     unchanged (for special cases needing override).
 
+    **Error handling**: Business-domain errors (SecAgentError subclasses)
+    propagate as exceptions. Unexpected infrastructure failures (DB crash,
+    disk full, adapter crash) are caught and returned as structured error
+    envelopes.
+
     Args:
         tool_name: Canonical tool name (e.g. ``"enumerate_subdomains"``).
         target_field: Key(s) in ``params`` to extract the target from.
@@ -129,50 +200,50 @@ def gated_tool(
             target = _resolve_target(params, target_field)
 
             # Step 2: gate pre-flight check
-            scope = gate.check(
-                token=authz_token,
-                tool=tool_name,
-                target=target,
-                caller_id=caller_id,
-            )
+            try:
+                scope = gate.check(
+                    token=authz_token,
+                    tool=tool_name,
+                    target=target,
+                    caller_id=caller_id,
+                )
+            except SecAgentError:
+                raise  # Structured business errors — propagate
+            except Exception as e:
+                log.error("gated_tool[%s] gate.check failed: %s", tool_name, e)
+                return _error_envelope(str(e), tool_name)
 
             # Step 3: run the tool function (adapter-specific logic)
-            result = fn(
-                gate=gate,
-                params=params,
-                authz_token=authz_token,
-                caller_id=caller_id,
-                **kwargs,
-            )
+            try:
+                result = fn(
+                    gate=gate,
+                    params=params,
+                    authz_token=authz_token,
+                    caller_id=caller_id,
+                    **kwargs,
+                )
+            except SecAgentError:
+                raise  # Business errors — let them propagate
+            except Exception as e:
+                log.error("gated_tool[%s] tool execution failed: %s", tool_name, e)
+                return _error_envelope(str(e), tool_name)
 
             # If the function returned a full dict, it's an override — pass through
             if isinstance(result, dict):
                 return result
 
-            # Step 4: generate engagement_id + convert findings
-            engagement_id = f"eng_{__import__('uuid').uuid4().hex}"
-            findings_list = list(result) if result is not None else []
-            findings_dicts = _findings_to_dicts(findings_list)
-            _tag_engagement(findings_dicts, engagement_id)
-
-            # Step 5: commit findings + quota + audit
-            gate.commit_findings(
+            # Step 4: materialize result (could be generator) + build result
+            findings_list = list(result) if result else []
+            engagement_id, findings_dicts, summary = _commit_and_build_result(
+                findings=findings_list,
+                gate=gate,
                 token=authz_token,
-                count=len(findings_dicts),
+                count=len(findings_list),
                 quota_used=1,
                 caller_id=caller_id,
-                tool=tool_name,
+                tool_name=tool_name,
                 target=target,
                 scope_value=scope.value,
-                findings=findings_dicts,
-            )
-
-            # Step 6: build unified return dict
-            finding_objs = [f for f in findings_list if isinstance(f, Finding)]
-            summary = (
-                Finding.summary(finding_objs)
-                if finding_objs
-                else _summary_from_dicts(findings_dicts)
             )
 
             return {
@@ -204,6 +275,11 @@ def standard_adapter_tool(
     If ``adapter_kwargs_fn`` is provided, it receives ``params`` and
     returns extra kwargs for the adapter constructor (e.g.
     ``{"wordlists_dir": ...}``).
+
+    **Error handling**: Business-domain errors (SecAgentError subclasses)
+    propagate as exceptions. Unexpected infrastructure failures (DB crash,
+    disk full, adapter crash) are caught and returned as structured error
+    envelopes.
     """
 
     def decorator(fn: ToolFn) -> ToolFn:
@@ -217,58 +293,68 @@ def standard_adapter_tool(
             **kwargs: Any,
         ) -> dict[str, Any]:
             # Let the fn mutate params first (safety clamps, validation)
-            fn(
-                gate=gate,
-                params=params,
-                authz_token=authz_token,
-                caller_id=caller_id,
-                **kwargs,
-            )
+            try:
+                fn(
+                    gate=gate,
+                    params=params,
+                    authz_token=authz_token,
+                    caller_id=caller_id,
+                    **kwargs,
+                )
+            except SecAgentError:
+                raise
+            except Exception as e:
+                log.error("standard_adapter_tool[%s] pre-flight mutation failed: %s", tool_name, e)
+                return _error_envelope(str(e), tool_name)
 
             target = _resolve_target(params, target_field)
-            scope = gate.check(
-                token=authz_token,
-                tool=tool_name,
-                target=target,
-                caller_id=caller_id,
-            )
+            try:
+                scope = gate.check(
+                    token=authz_token,
+                    tool=tool_name,
+                    target=target,
+                    caller_id=caller_id,
+                )
+            except SecAgentError:
+                raise
+            except Exception as e:
+                log.error("standard_adapter_tool[%s] gate check failed: %s", tool_name, e)
+                return _error_envelope(str(e), tool_name)
 
-            binaries_dir = os.environ.get(
-                "SECAGENT_BINARIES_DIR", gate.store.db_path.rsplit("/", 1)[0] + "/bin"
-                if hasattr(gate, "store")
-                else "./bin"
-            )
-            extra_kwargs = adapter_kwargs_fn(params) if adapter_kwargs_fn else {}
-            adapter = adapter_cls(
-                launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
-                binaries_dir=binaries_dir,
-                **extra_kwargs,
-            )
-            findings = adapter.run(params)
+            try:
+                binaries_dir = os.environ.get(
+                    "SECAGENT_BINARIES_DIR", gate.store.db_path.rsplit("/", 1)[0] + "/bin"
+                    if hasattr(gate, "store")
+                    else "./bin"
+                )
+                extra_kwargs = adapter_kwargs_fn(params) if adapter_kwargs_fn else {}
+                adapter = adapter_cls(
+                    launcher=Launcher(timeout_sec=params.get("timeout_sec", 120),
+                                      proxy_manager=gate.proxy_manager),
+                    binaries_dir=binaries_dir,
+                    **extra_kwargs,
+                )
+                findings = adapter.run(params)
+            except SecAgentError:
+                raise
+            except Exception as e:
+                log.error("standard_adapter_tool[%s] adapter execution failed: %s", tool_name, e)
+                return _error_envelope(str(e), tool_name)
 
-            engagement_id = f"eng_{__import__('uuid').uuid4().hex}"
+            # Materialize in case adapter returns a generator
             findings_list = list(findings) if findings else []
-            findings_dicts = _findings_to_dicts(findings_list)
-            _tag_engagement(findings_dicts, engagement_id)
 
-            gate.commit_findings(
+            engagement_id, findings_dicts, summary = _commit_and_build_result(
+                findings=findings_list,
+                gate=gate,
                 token=authz_token,
-                count=len(findings_dicts),
+                count=len(findings_list),
                 quota_used=1,
                 caller_id=caller_id,
-                tool=tool_name,
+                tool_name=tool_name,
                 target=target,
                 scope_value=scope.value,
-                findings=findings_dicts,
             )
-
-            finding_objs = [f for f in findings_list if isinstance(f, Finding)]
-            summary = (
-                Finding.summary(finding_objs)
-                if finding_objs
-                else _summary_from_dicts(findings_dicts)
-            )
-
             return {
                 "engagement_id": engagement_id,
                 "tool": tool_name,

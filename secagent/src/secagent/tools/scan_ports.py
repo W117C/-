@@ -1,8 +1,7 @@
-"""Tool function: scan_ports (设计文档 §2).
+"""Tool function: scan_ports (spec §3.2 ②) — port scanning.
 
-Wires NaabuAdapter through ComplianceGate. Performs port scanning on authorized
-targets using naabu (ProjectDiscovery port scanner).
-"""
+Naabu performs port scanning on authorized targets. Wired through
+ComplianceGate with IP whitelist/blacklist enforcement."""
 from __future__ import annotations
 
 import os
@@ -24,12 +23,18 @@ def scan_ports(
     authz_token: str,
     caller_id: str = "unknown",
 ) -> list[Finding]:
+    """Run naabu port scanner through the compliance gate.
+
+    Validates target, constructs NaabuAdapter. The decorator handles
+    gate.check, commit_findings, and the return dict encoding.
+    """
     target = params.get("target", "")
     if not target or not isinstance(target, str):
         raise InvalidInputError(field="target", reason="must be a non-empty string")
     binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = NaabuAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120),
+                          proxy_manager=gate.proxy_manager),
         binaries_dir=binaries_dir,
     )
     return adapter.run(params)

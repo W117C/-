@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "secagent"
 version = "0.1.0"
 description = "Security MCP server wrapping SuperSpider + open-source tooling"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = [
     "click>=8.1",
     "pyyaml>=6.0",
@@ -29,3 +29,19 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["UP006", "UP007"]
+"src/secagent/adapters/web_vuln.py" = ["N806"]
+"src/secagent/analyzers/binary_analyzer.py" = ["N806"]
+"src/secagent/server/__main__.py" = ["N806"]
+"src/secagent/report/pdf_report.py" = ["E402"]
+"src/secagent/workflow/hunterone.py" = ["F401"]

@@ -12,9 +12,10 @@ import os
 import random
 import socket
 import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Iterator
+from typing import Any
 from urllib.parse import urlparse
 
 
@@ -52,6 +53,10 @@ PROXY_FLAG_TOOLS: dict[str, list[str]] = {
     "nuclei": ["-proxy", "{proxy}"],
     "naabu": ["-proxy", "{proxy}"],
     "ffuf": ["-x", "{proxy}"],
+    "katana": ["-proxy", "{proxy}"],
+    "dnsx": ["-proxy", "{proxy}"],
+    "tlsx": ["-proxy", "{proxy}"],
+    "uncover": ["-proxy", "{proxy}"],
 }
 
 # Tools that DON'T support native proxy flags — rely on ALL_PROXY env vars.

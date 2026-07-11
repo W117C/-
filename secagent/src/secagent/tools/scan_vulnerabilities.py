@@ -7,7 +7,7 @@ three-layer compliance guard required by spec §3.2 ③:
   Layer 2 (blocklist.check) — re-validated per-target immediately before
                               nuclei runs (defense in depth: even if the
                               gate passed, a .gov target must NEVER reach
-                              nuclei's -u list)
+                              nuclei's -l list)
   Layer 3 (rate_limit)      — nuclei -rate-limit enforced per subprocess
 
 The blocklist re-check is non-trivial: between gate.check and adapter.run the
@@ -15,6 +15,10 @@ only thing that could change is the target list itself (a caller might pass
 mixed targets). We therefore iterate every target through the blocklist a
 SECOND time right before handing off to the adapter, and refuse the whole
 call if any target is blocked.
+
+This tool uses **multi-target batch** with manual gate.check per-target,
+then calls the shared ``_commit_and_build_result`` helper for the
+engagement_id / findgings_dicts / quota / audit commit.
 
 Contract (same as every other tool function):
   - caller supplies a verified authz_token covering ALL targets
@@ -24,17 +28,19 @@ Contract (same as every other tool function):
 """
 from __future__ import annotations
 
+import logging
 import os
-import uuid
 from typing import Any
 from urllib.parse import urlparse
 
 from secagent.adapters.nuclei import NucleiAdapter
 from secagent.binmgmt.launcher import Launcher
 from secagent.core.blocklist import Blocklist
-from secagent.core.errors import ComplianceBlockError, InvalidInputError
-from secagent.core.finding import Finding
+from secagent.core.decorators import _commit_and_build_result, _error_envelope
+from secagent.core.errors import ComplianceBlockError, InvalidInputError, SecAgentError
 from secagent.core.gate import ComplianceGate
+
+log = logging.getLogger(__name__)
 
 
 def _host_of(target: str) -> str:
@@ -105,33 +111,35 @@ def scan_vulnerabilities(
     # --- Execute: adapter -------------------------------------------------
     binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = NucleiAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 600)),
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 600),
+                          proxy_manager=gate.proxy_manager),
         binaries_dir=binaries_dir,
     )
-    findings = adapter.run(safe_params)
+    try:
+        findings = adapter.run(safe_params)
+    except SecAgentError:
+        raise  # Let business errors propagate
+    except Exception as e:
+        log.error("scan_vulnerabilities adapter.run failed: %s", e)
+        return _error_envelope(str(e), "scan_vulnerabilities")
 
-    # Build response
-    engagement_id = f"eng_{uuid.uuid4().hex}"
-    findings_dicts = [f.to_dict() for f in findings]
-    for fd in findings_dicts:
-        fd["engagement_id"] = engagement_id
-
-    # --- Post-run: commit findings + decrement quota ----------------------
-    gate.commit_findings(
+    # --- Post-run: commit findings + decrement quota (via shared helper) ---
+    engagement_id, findings_dicts, summary = _commit_and_build_result(
+        findings=findings,
+        gate=gate,
         token=authz_token,
         count=len(findings),
         quota_used=1,
         caller_id=caller_id,
-        tool=tool_name,
+        tool_name=tool_name,
         target=",".join(targets),
         scope_value=scopes[0].value if scopes else None,
-        findings=findings_dicts,
     )
 
     return {
         "engagement_id": engagement_id,
         "tool": tool_name,
-        "findings": [f.to_dict() for f in findings],
-        "summary": Finding.summary(findings),
+        "findings": findings_dicts,
+        "summary": summary,
         "quota_used": 1,
     }

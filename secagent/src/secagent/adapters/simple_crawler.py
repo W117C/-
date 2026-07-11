@@ -14,17 +14,17 @@ Design notes:
 """
 from __future__ import annotations
 
-import re
-import uuid
 import datetime as dt
+import re
 import urllib.error
 import urllib.request
+import uuid
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
 from secagent.core.errors import InvalidInputError, ToolFailedError
 from secagent.core.finding import Finding, FindingType, Severity
-
+from secagent.core.headers import random_ua
 
 # Hint patterns that, when found inside an HTML comment, indicate a leaked secret.
 _SECRET_HINT_PATTERNS = [
@@ -47,7 +47,7 @@ def _default_fetch(url: str, timeout: int, proxy_manager=None) -> str:
     to route requests through the configured proxy.
     """
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "SecAgent/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": random_ua("chrome_mac")})
         if proxy_manager and proxy_manager.is_enabled():
             handler = proxy_manager.build_proxy_handler()
             if handler:

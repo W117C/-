@@ -9,7 +9,6 @@ import ipaddress
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 from secagent.core.errors import ComplianceBlockError
 
@@ -76,7 +75,7 @@ class Blocklist:
             log.warning("failed to load blocklist %s: %s", blocklist_path, exc)
             self.custom_domains = set()
 
-    def is_blocked(self, target: str) -> tuple[bool, Optional[str]]:
+    def is_blocked(self, target: str) -> tuple[bool, str | None]:
         """Return (blocked, reason). reason is None if not blocked."""
         t = target.strip().lower()
         # custom domain list

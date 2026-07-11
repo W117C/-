@@ -9,7 +9,7 @@ import datetime as dt
 import json
 from typing import Any
 
-from secagent.report._common import _normalize, _aggregate
+from secagent.report._common import _aggregate, _normalize
 
 
 def render_json(engagements: Any) -> str:

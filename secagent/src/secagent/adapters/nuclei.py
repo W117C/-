@@ -13,19 +13,18 @@ Nuclei JSON output (one object per line, -jsonl):
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import sys
 import uuid
-import datetime as dt
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
-from secagent.binmgmt.versions import get_tool_version
 from secagent.binmgmt.launcher import Launcher, LaunchResult
-from secagent.core.finding import Finding, FindingType, Severity
+from secagent.binmgmt.versions import get_tool_version
 from secagent.core.errors import InvalidInputError, ToolFailedError
-
+from secagent.core.finding import Finding, FindingType, Severity
 
 # Map nuclei severity strings → our Severity enum. Nuclei uses lowercase.
 _NUCLEI_SEVERITY_MAP: dict[str, Severity] = {
@@ -108,6 +107,17 @@ class NucleiAdapter(BaseAdapter):
             severity_filter = params.get("severity_filter")
             if severity_filter:
                 cmd.extend(["-severity", severity_filter])
+
+            # tags filter: nuclei supports -tags for filtering templates by
+            # labels (cves, tech-detect, default-login, exposure-configs,
+            # xss, sqli, ssrf, lfi, rce, etc.). Accept both list and string.
+            tags = params.get("tags")
+            if tags:
+                if isinstance(tags, list):
+                    tag_str = ",".join(tags)
+                else:
+                    tag_str = tags
+                cmd.extend(["-tags", tag_str])
 
             result = self._launch(cmd)
         finally:

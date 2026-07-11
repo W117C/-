@@ -25,13 +25,12 @@ from secagent.core.gate import ComplianceGate
 from secagent.core.registry import AuthorizationRegistry
 from secagent.core.scheduler import JobManager
 from secagent.server.tools_registry import (
+    _POLL_RESULT_SCHEMA,
+    _SUBMIT_SCAN_SCHEMA,
     ToolDefinition,
     all_tools,
-    _SUBMIT_SCAN_SCHEMA,
-    _POLL_RESULT_SCHEMA,
 )
 from secagent.storage.sqlite_store import SQLiteStore
-
 
 _JSON_TYPE_NAMES = {
     "array": "array",

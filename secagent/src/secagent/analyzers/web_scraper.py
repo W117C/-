@@ -17,7 +17,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # ==========================================================================
 # 反检测配置
 # ==========================================================================
@@ -167,7 +166,7 @@ class SessionManager:
         """加载之前保存的浏览器会话状态。"""
         try:
             if os.path.exists(self._storage_file):
-                with open(self._storage_file, "r", encoding="utf-8") as f:
+                with open(self._storage_file, encoding="utf-8") as f:
                     return json.load(f)
         except (json.JSONDecodeError, OSError):
             pass

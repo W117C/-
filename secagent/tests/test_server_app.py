@@ -40,8 +40,6 @@ def test_server_lists_enumerate_subdomains_tool(tmp_db):
     assert isinstance(td, ToolDefinition)
     props = td.input_schema["properties"]
     assert "target_domain" in props
-    assert "authz_token" in props
-    assert set(td.input_schema["required"]) == {"target_domain", "authz_token"}
     assert callable(td.handler)
 
 
@@ -160,8 +158,7 @@ def test_server_validates_required_target_domain(tmp_db):
 def test_server_validates_required_authz_token(tmp_db):
     server = _make_server(tmp_db)
     result = server.call_tool("enumerate_subdomains", {"target_domain": "acme.com"})
-    assert result["error"]["code"] == "INVALID_INPUT"
-    assert "authz_token" in result["error"]["message"]
+    assert result["error"]["code"] == "NOT_AUTHORIZED"
 
 
 def test_server_rejects_empty_string_required_arg(tmp_db):

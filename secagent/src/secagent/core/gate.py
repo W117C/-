@@ -19,22 +19,32 @@ from secagent.core.audit import AuditLogger
 from secagent.core.authz import AuthorizationScope, ScopeType, check_target_in_scope
 from secagent.core.blocklist import Blocklist
 from secagent.core.errors import ComplianceBlockError, NotAuthorizedError
+from secagent.core.proxy import ProxyManager
 from secagent.core.quota import QuotaManager
 from secagent.storage.sqlite_store import SQLiteStore
 
 log = logging.getLogger(__name__)
+def _resolve_with_timeout(target: str, timeout: float = 5.0,
+                         proxy_manager = None) -> list:
+    """Resolve hostname to addresses with a thread-based timeout.
 
-
-
-def _resolve_with_timeout(target: str, timeout: float = 5.0) -> list:
-    """Resolve hostname to addresses with a thread-based timeout."""
+    When a SOCKS5 proxy is active, uses PySocks so the DNS query is
+    sent through the proxy (remote-DNS mode), preventing local DNS
+    leakage of the target hostname.
+    """
     result: list = []
     exception: BaseException | None = None
 
     def _resolve() -> None:
         nonlocal result, exception
         try:
-            result.extend(socket.getaddrinfo(target, None))
+            if (proxy_manager is not None and proxy_manager.is_enabled()
+                    and proxy_manager._is_socks5(proxy_manager.get_proxy())):
+                # SOCKS5 with remote DNS: resolve through the proxy
+                with proxy_manager.socks_context():
+                    result.extend(socket.getaddrinfo(target, None))
+            else:
+                result.extend(socket.getaddrinfo(target, None))
         except BaseException as exc:
             exception = exc
 
@@ -49,12 +59,15 @@ def _resolve_with_timeout(target: str, timeout: float = 5.0) -> list:
 
 
 class ComplianceGate:
-    def __init__(self, store: SQLiteStore, quota: QuotaManager, default_quota: int, blocklist: Blocklist | None = None):
+    def __init__(self, store: SQLiteStore, quota: QuotaManager, default_quota: int,
+                 blocklist: Blocklist | None = None,
+                 proxy_manager: ProxyManager | None = None):
         self.store = store
         self.quota = quota
         self.default_quota = default_quota
         self.blocklist = blocklist or Blocklist()
         self.audit = AuditLogger(store)
+        self.proxy_manager = proxy_manager or ProxyManager.from_env()
 
     def check(self, *, token: str, tool: str, target: str, caller_id: str) -> AuthorizationScope:
         """Pre-flight: scope + blocklist + verification. Raises on refusal.
@@ -113,7 +126,8 @@ class ComplianceGate:
 
             if not is_ip:
                 try:
-                    addrinfo = _resolve_with_timeout(target, timeout=5.0)
+                    addrinfo = _resolve_with_timeout(target, timeout=5.0,
+                                                     proxy_manager=self.proxy_manager)
                     for family, _, _, _, sockaddr in addrinfo:
                         ip = sockaddr[0]
                         blocked, reason = self.blocklist.is_blocked(ip)
@@ -152,41 +166,50 @@ class ComplianceGate:
 
         *findings* is an optional list of Finding dicts. When provided, each
         finding is written to the ``findings`` table (defense line 3).
+
+        **Error handling**: If the transaction fails (DB locked, disk full,
+        constraint violation), the exception is caught, logged, and re-raised
+        as a ``RuntimeError`` with a clear message. The caller (decorator)
+        catches this and still returns findings to the client.
         """
         import datetime as dt
         import json
 
-        with self.store.transaction() as conn:
-            self.quota.decrement_in_tx(conn, token, amount=quota_used)
+        try:
+            with self.store.transaction() as conn:
+                self.quota.decrement_in_tx(conn, token, amount=quota_used)
 
-            # Persist findings to the existing findings table
-            if findings:
-                now = dt.datetime.now(dt.timezone.utc).isoformat()
-                for f in findings:
-                    conn.execute(
-                        """INSERT OR IGNORE INTO findings
-                           (id, engagement_id, tool, type, severity, target,
-                            title, evidence_json, source_tool, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            f.get("id", ""),
-                            f.get("engagement_id", ""),
-                            tool,
-                            f.get("type", ""),
-                            f.get("severity", "info"),
-                            f.get("target", ""),
-                            f.get("title", ""),
-                            json.dumps(f.get("evidence", {}), ensure_ascii=False),
-                            f.get("source_tool", tool),
-                            now,
-                        ),
-                    )
+                # Persist findings to the existing findings table
+                if findings:
+                    now = dt.datetime.now(dt.timezone.utc).isoformat()
+                    for f in findings:
+                        conn.execute(
+                            """INSERT OR IGNORE INTO findings
+                               (id, engagement_id, tool, type, severity, target,
+                                title, evidence_json, source_tool, created_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (
+                                f.get("id", ""),
+                                f.get("engagement_id", ""),
+                                tool,
+                                f.get("type", ""),
+                                f.get("severity", "info"),
+                                f.get("target", ""),
+                                f.get("title", ""),
+                                json.dumps(f.get("evidence", {}), ensure_ascii=False),
+                                f.get("source_tool", tool),
+                                now,
+                            ),
+                        )
 
-            self.audit.log_in_tx(
-                conn, caller_id=caller_id, authz_token=token, tool=tool, target=target,
-                scope_at_call=scope_value, outcome="executed", findings_count=count,
-                quota_used=quota_used,
-            )
+                self.audit.log_in_tx(
+                    conn, caller_id=caller_id, authz_token=token, tool=tool, target=target,
+                    scope_at_call=scope_value, outcome="executed", findings_count=count,
+                    quota_used=quota_used,
+                )
+        except Exception as e:
+            log.error("commit_findings[token=%s tool=%s] transaction failed: %s", token, tool, e)
+            raise RuntimeError(f"commit_findings failed: {e}") from e
 
     def _conn_count_audit(self) -> int:
         conn = self.store._connect()

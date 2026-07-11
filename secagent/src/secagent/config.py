@@ -24,10 +24,10 @@ class Config:
     extra: dict = field(default_factory=dict)
 
     @classmethod
-    def load(cls, path: str | None = None) -> "Config":
+    def load(cls, path: str | None = None) -> Config:
         data: dict = {}
         if path and Path(path).exists():
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
 
         db_path = os.environ.get("SECAGENT_DB_PATH", data.get("database", {}).get("path", "./data/secagent.db"))

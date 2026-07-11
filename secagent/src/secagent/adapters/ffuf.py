@@ -19,10 +19,10 @@ import uuid
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
-from secagent.binmgmt.versions import get_tool_version
 from secagent.binmgmt.launcher import Launcher, LaunchResult
-from secagent.core.finding import Finding, FindingType, Severity
+from secagent.binmgmt.versions import get_tool_version
 from secagent.core.errors import InvalidInputError, ToolFailedError
+from secagent.core.finding import Finding, FindingType, Severity
 from secagent.core.tech_paths import paths_for_tech
 
 # Path patterns that indicate higher-severity findings.
@@ -190,7 +190,7 @@ class FfufAdapter(BaseAdapter):
             # Write a combined wordlist: base + tech-specific paths
             combined_path = wordlist + ".tech_combined"
             if not os.path.isfile(combined_path):
-                with open(wordlist, "r") as base_f:
+                with open(wordlist) as base_f:
                     base_content = base_f.read()
                 with open(combined_path, "w") as cf:
                     cf.write(base_content)

@@ -7,7 +7,8 @@ import sys
 import click
 
 from secagent.config import Config
-from secagent.report import render_markdown, render_json
+from secagent.report import render_json, render_markdown
+from secagent.report.pdf_report import render_pdf
 from secagent.storage.sqlite_store import SQLiteStore
 
 
@@ -84,9 +85,9 @@ def report() -> None:
 @click.option("--tool", default=None, help="Filter by tool name.")
 @click.option("--target", default=None, help="Filter by target (substring match).")
 @click.option("--severity", default=None, help="Filter by severity.")
-@click.option("--format", "fmt", default="markdown", type=click.Choice(["markdown", "json"]),
+@click.option("--format", "fmt", default="markdown", type=click.Choice(["markdown", "json", "pdf"]),
               help="Output format.")
-@click.option("--output", default=None, help="Output file path (default: stdout).")
+@click.option("--output", default=None, help="Output file path (default: stdout). For pdf, a .pdf path is required.")
 @click.option("--limit", default=200, type=int, help="Max findings to include.")
 def report_generate(tool, target, severity, fmt, output, limit):
     """Generate a report from historical findings."""
@@ -98,12 +99,23 @@ def report_generate(tool, target, severity, fmt, output, limit):
 
     if fmt == "markdown":
         body = render_markdown(engagements)
-    else:
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(body)
+            click.echo(f"Report written to {output}")
+        else:
+            click.echo(body)
+    elif fmt == "json":
         body = render_json(engagements)
-
-    if output:
-        with open(output, "w", encoding="utf-8") as f:
-            f.write(body)
-        click.echo(f"Report written to {output}")
-    else:
-        click.echo(body)
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(body)
+            click.echo(f"Report written to {output}")
+        else:
+            click.echo(body)
+    else:  # pdf
+        if not output:
+            click.echo("Error: --output PATH.pdf is required for pdf format.", err=True)
+            sys.exit(2)
+        render_pdf(engagements, output)
+        click.echo(f"PDF report written to {output}")

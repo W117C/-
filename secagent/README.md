@@ -1,19 +1,17 @@
 # SecAgent
 
-Security MCP server that wraps **SuperSpider** + open-source tooling
-(Nuclei/Subfinder/httpx/gitleaks/theHarvester) into tools callable by
-Codex / Claude Code / Reasonix.
+Security MCP server that wraps open-source tooling
+(Nuclei/Subfinder/httpx/Naabu/FFUF/gitleaks/theHarvester) into tools callable by
+Codex / Claude Code / any MCP-compatible agent.
 
-> **Status:** M4 — install script + report generator + docs. MVP complete.
-> 6 tools live, 226 tests passing. Ready for design-partner feedback.
+> **Status:** Production-ready. 15 tools (11 scan + 4 new penetration), 524 tests passing, 6 binary tools, 13320 Nuclei templates.
 
 ## Quick install
 
 ```bash
 cd secagent
-pip install -e ".[mcp]"          # Python ≥3.10 required by the mcp SDK
-bash scripts/install.sh          # downloads subfinder/httpx/nuclei/gitleaks
-pip install theHarvester         # OSINT tool (Python package, not a binary)
+make install                      # pip deps + binary tools + Nuclei templates
+make health-check                 # verify everything is ready
 ```
 
 For the full 5-minute onboarding flow (install → authorize → scan → report),
@@ -64,18 +62,25 @@ python -m secagent.server        # stdio MCP server
 See [`docs/MCP_SERVER.md`](docs/MCP_SERVER.md) for client wiring (Claude Code
 config JSON), the full request/response contract, and troubleshooting.
 
-## M3 — Remaining 5 Tools
-
-All six atomic tools are now wired through the compliance gate:
+## Tools (15 total)
 
 | Tool | Adapter | Underlying | Finding type | Risk |
 |---|---|---|---|---|
 | `enumerate_subdomains` | SubfinderAdapter | subfinder | subdomain | read-only |
+| `scan_ports` | NaabuAdapter | naabu | open_port | active probe |
 | `probe_services` | HttpxAdapter | httpx | service | read (HTTP GET) |
+| `discover_paths` | FfufAdapter | ffuf | exposed_path | active probe |
 | `gather_osint` | TheHarvesterAdapter | theHarvester | intel | read (public data) |
 | `scan_secret_leaks` | GitleaksAdapter | gitleaks | secret_leak | read (secrets **redacted**) |
-| `crawl_target` | SimpleCrawlerAdapter | built-in stdlib | exposure | read (HTTP GET) |
 | `scan_vulnerabilities` | NucleiAdapter | nuclei | vulnerability | **active probes** |
+| `crawl_target` | SimpleCrawlerAdapter | built-in stdlib | exposure | read (HTTP GET) |
+| `attack_surface_scan` | orchestration | chains 7 phases | mixed | **active probes** |
+| `passive_recon` | TheHarvesterAdapter | theHarvester | intel | read-only |
+| `check_health` | — | diagnostic | — | none |
+| `crawl_with_katana` | KatanaAdapter | katana | crawl_result | read (HTTP GET) |
+| `resolve_dns` | DnsxAdapter | dnsx | dns_record | read-only |
+| `fingerprint_tls` | TlsxAdapter | tlsx | tls_fingerprint | read-only |
+| `search_engines` | UncoverAdapter | uncover (Shodan/Censys/Fofa) | exposure | read (public data) |
 
 ### `scan_vulnerabilities` — three-layer compliance guard (spec §3.2 ③)
 
@@ -90,13 +95,39 @@ adds two extra defense layers on top of the standard gate:
 3. **Layer 3 — rate-limit clamp** (`-rate-limit`), clamped to `[1, 500]` so a
    caller cannot accidentally DoS their own asset.
 
-### `attack_surface_scan` — wider vulnerability discovery
+### `attack_surface_scan` — full attack surface mapping
 
-For broader coverage, submit `attack_surface_scan` through `submit_scan`.
-It chains the existing gated tools: subdomain enumeration → live service
-probing → nuclei scan of discovered HTTP services. The active nuclei phase is
-capped by `max_scan_targets` (default `25`) and every phase still uses the
-same authz, blocklist, audit, and quota controls.
+Chains 5 phases: subdomain enumeration → parallel port scanning → service
+probing → path discovery → Nuclei vulnerability scan.
+
+**New:** Parallel port scanning (`ThreadPoolExecutor`), cross-phase result
+deduplication, and automatic remediation enrichment.
+
+### Agent Dispatcher — parallel orchestration
+
+`core/dispatcher.py` provides a `AgentDispatcher` for running multiple scan
+tasks in parallel with automatic dedup + remediation enrichment:
+
+```python
+from secagent.core.dispatcher import AgentDispatcher, Task
+d = AgentDispatcher(gate, authz_token, "cli")
+result = d.dispatch([
+    Task("enumerate_subdomains", {"target_domain": "acme.com"}, priority=10),
+    Task("scan_ports", {"target": "acme.com"}, priority=5),
+])
+```
+
+### Remediation Knowledge Base
+
+`core/remediation.py` maps findings to actionable fix suggestions (18 rules,
+Critical→Low). Each Finding is automatically enriched with:
+- **`confidence`**: `validated` | `likely` | `unvalidated` | `false_positive`
+- **`remediation`**: concrete fix instructions
+
+### CI/CD Integration
+
+`.github/workflows/security-scan.yml` provides GitHub Actions for automated
+scanning on push/PR/schedule.
 
 ### `scan_secret_leaks` — data minimization (spec §4.3)
 
@@ -164,15 +195,16 @@ secagent authz verify auth_xxx --method dns_txt
 secagent authz list
 ```
 
-## Design
+## Architecture
 
-See `../docs/superpowers/specs/2026-06-16-secagent-mcp-design.md`.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full architecture document:
+layer diagram, data flow, directory structure, and extension guide.
 
 ## Tests
 
 ```bash
-cd secagent && pytest -v
-# 226 tests pass (M1 + M2a + M2b + M3 + M4 installer + report)
+make test
+# 524 tests pass
 ```
 
 The server application core (`server/app.py`) is tested without the MCP SDK;

@@ -7,15 +7,15 @@ Spec: §3.2 ① enumerate_subdomains, §5.2 (binary dependency strategy).
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import uuid
-import datetime as dt
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
-from secagent.binmgmt.versions import get_tool_version
 from secagent.binmgmt.launcher import Launcher, LaunchResult
+from secagent.binmgmt.versions import get_tool_version
 from secagent.core.finding import Finding, FindingType, Severity
 
 

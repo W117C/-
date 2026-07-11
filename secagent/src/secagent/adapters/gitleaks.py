@@ -9,18 +9,17 @@ redacted before they enter a Finding — never store raw plaintext).
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import uuid
-import datetime as dt
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
-from secagent.binmgmt.versions import get_tool_version
 from secagent.binmgmt.launcher import Launcher, LaunchResult
-from secagent.core.finding import Finding, FindingType, Severity
+from secagent.binmgmt.versions import get_tool_version
 from secagent.core.errors import InvalidInputError, ToolFailedError
-
+from secagent.core.finding import Finding, FindingType, Severity
 
 # Rule IDs that map to CRITICAL severity. Everything else is HIGH.
 _CRITICAL_RULE_KEYWORDS = ("aws", "private-key", "private_key", "rsa", "gcp", "github-token")

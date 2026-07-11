@@ -25,9 +25,11 @@ import uuid
 from typing import Any
 from urllib.parse import urlencode
 
+from secagent.core.decorators import gated_tool
 from secagent.core.errors import InvalidInputError
 from secagent.core.finding import Finding, FindingType, Severity
 from secagent.core.gate import ComplianceGate
+from secagent.core.headers import random_ua
 from secagent.core.proxy import ProxyManager
 
 # Timeout for external API calls (seconds)
@@ -42,10 +44,9 @@ def _build_opener(proxy_manager=None):
             # HTTP/HTTPS proxy → use standard ProxyHandler
             handler = proxy_manager.build_proxy_handler()
             if handler:
-                ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                https_handler = urllib.request.HTTPSHandler(context=ctx)
+                # Use default SSL context (certificate verification ENABLED)
+                # Do NOT disable check_hostname/verify_mode — that would enable MITM on API calls
+                https_handler = urllib.request.HTTPSHandler(context=ssl.create_default_context())
                 return urllib.request.build_opener(handler, https_handler)
         # SOCKS5 → return None (caller should use socks_context)
     return urllib.request.build_opener()
@@ -58,7 +59,7 @@ def _crt_sh_query(domain: str, proxy_manager=None) -> list[dict[str, Any]]:
     hostnames (one per certificate, may include wildcards).
     """
     url = f"https://crt.sh/?q=%25.{domain}&output=json"
-    req = urllib.request.Request(url, headers={"User-Agent": "SecAgent/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": random_ua("chrome_mac")})
     try:
         opener = _build_opener(proxy_manager)
         with opener.open(req, timeout=_API_TIMEOUT) as resp:
@@ -79,7 +80,7 @@ def _securitytrails_query(domain: str, proxy_manager=None) -> list[str]:
     url = f"https://api.securitytrails.com/v1/domain/{domain}/subdomains"
     req = urllib.request.Request(url)
     req.add_header("APIKEY", api_key)
-    req.add_header("User-Agent", "SecAgent/1.0")
+    req.add_header("User-Agent", random_ua("chrome_mac"))
     try:
         opener = _build_opener(proxy_manager)
         with opener.open(req, timeout=_API_TIMEOUT) as resp:
@@ -101,7 +102,7 @@ def _shodan_query(domain: str, proxy_manager=None) -> list[dict[str, Any]]:
         return []
     query = urlencode({"q": domain, "key": api_key})
     url = f"https://api.shodan.io/shodan/host/search?{query}"
-    req = urllib.request.Request(url, headers={"User-Agent": "SecAgent/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": random_ua("chrome_mac")})
     try:
         opener = _build_opener(proxy_manager)
         with opener.open(req, timeout=_API_TIMEOUT) as resp:
@@ -128,13 +129,14 @@ def _extract_subdomains_from_crt(domain: str, entries: list[dict[str, Any]]) -> 
     return subdomains
 
 
+@gated_tool(tool_name="passive_recon", target_field="target")
 def passive_recon(
     *,
     gate: ComplianceGate,
     params: dict[str, Any],
     authz_token: str,
     caller_id: str = "unknown",
-) -> dict[str, Any]:
+) -> list[Finding]:
     """Gather passive intelligence on an authorized domain.
 
     Required param:
@@ -144,34 +146,21 @@ def passive_recon(
       - sources: list of sources to use ['crtsh', 'securitytrails', 'shodan']
                  (default: all available)
 
-    Returns the unified output structure:
-      { engagement_id, tool, findings, summary, quota_used }
+    Returns list[Finding] — envelope built by @gated_tool decorator.
     """
     target = params.get("target", "")
     if not target or not isinstance(target, str):
         raise InvalidInputError(field="target", reason="must be a non-empty string")
-
-    tool_name = "passive_recon"
-
-    # Pre-flight: compliance gate check
-    scope = gate.check(
-        token=authz_token,
-        tool=tool_name,
-        target=target,
-        caller_id=caller_id,
-    )
 
     allowed_sources = params.get("sources")
     if allowed_sources is None:
         allowed_sources = ["crtsh", "securitytrails", "shodan"]
     elif not isinstance(allowed_sources, list):
         allowed_sources = ["crtsh", "securitytrails", "shodan"]
-    # If sources is an empty list, no sources are queried (user explicitly opted out)
 
     findings: list[Finding] = []
-    engagement_id = f"eng_{uuid.uuid4().hex}"
 
-    proxy_mgr = ProxyManager.from_env()
+    proxy_mgr = ProxyManager.from_env() if gate.proxy_manager is None else gate.proxy_manager
 
     # If SOCKS5 proxy is active, use PySocks context for all API calls
     with proxy_mgr.socks_context(target):
@@ -191,7 +180,7 @@ def passive_recon(
                             "source": "crtsh",
                             "domain": target,
                         },
-                        source_tool=tool_name,
+                        source_tool="passive_recon",
                     )
                 )
 
@@ -210,7 +199,7 @@ def passive_recon(
                             "source": "securitytrails",
                             "domain": target,
                         },
-                        source_tool=tool_name,
+                        source_tool="passive_recon",
                     )
                 )
 
@@ -236,7 +225,7 @@ def passive_recon(
                                 "domain": target,
                                 "service_preview": data[:200] if data else "",
                             },
-                            source_tool=tool_name,
+                            source_tool="passive_recon",
                         )
                     )
 
@@ -249,26 +238,4 @@ def passive_recon(
             seen_targets.add(key)
             deduped.append(f)
 
-    findings_dicts = [f.to_dict() for f in deduped]
-    for fd in findings_dicts:
-        fd["engagement_id"] = engagement_id
-
-    # Post-run: commit findings + decrement quota
-    gate.commit_findings(
-        token=authz_token,
-        count=len(deduped),
-        quota_used=1,
-        caller_id=caller_id,
-        tool=tool_name,
-        target=target,
-        scope_value=scope.value,
-        findings=findings_dicts,
-    )
-
-    return {
-        "engagement_id": engagement_id,
-        "tool": tool_name,
-        "findings": findings_dicts,
-        "summary": Finding.summary(deduped),
-        "quota_used": 1,
-    }
+    return deduped

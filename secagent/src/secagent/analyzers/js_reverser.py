@@ -8,7 +8,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-
 # ==========================================================================
 # JS 美化与反混淆
 # ==========================================================================
@@ -235,7 +234,7 @@ def try_decrypt_sojson(js_code: str) -> str | None:
     Returns:
         还原后的代码片段，或 None。
     """
-    from secagent.core.decoders import try_decode, EncodingType
+    from secagent.core.decoders import EncodingType, try_decode
 
     decoded = try_decode(js_code, EncodingType.UNICODE_ESCAPE)
     if decoded and decoded != js_code:
@@ -249,7 +248,7 @@ def decode_hex_strings(js_code: str) -> dict[str, str]:
     Returns:
         {原始字符串: 解码后字符串} 的映射。
     """
-    from secagent.core.decoders import try_decode, EncodingType
+    from secagent.core.decoders import EncodingType, try_decode
     results: dict[str, str] = {}
     for match in re.finditer(r"'((?:\\x[0-9a-fA-F]{2})+)\\'", js_code):
         raw = match.group(1)

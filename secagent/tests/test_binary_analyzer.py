@@ -106,7 +106,7 @@ class TestAnalyzeBinary:
         binary.imported_symbols = [sym1, sym2]
         binary.exported_functions = [MagicMock(name="main")]
         binary.symbols = [MagicMock(name="main"), MagicMock(name="init")]
-        binary.optional_header.dll_characteristics = 0x8140
+        binary.optional_header.dll_characteristics = 0xC140  # NX|ASLR|CFG
         binary.has_signatures = False
         return binary
 

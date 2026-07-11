@@ -15,10 +15,10 @@ import uuid
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
-from secagent.binmgmt.versions import get_tool_version
 from secagent.binmgmt.launcher import Launcher, LaunchResult
-from secagent.core.finding import Finding, FindingType, Severity
+from secagent.binmgmt.versions import get_tool_version
 from secagent.core.errors import InvalidInputError, ToolFailedError
+from secagent.core.finding import Finding, FindingType, Severity
 
 
 class NaabuAdapter(BaseAdapter):

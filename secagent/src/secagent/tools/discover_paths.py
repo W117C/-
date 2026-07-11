@@ -1,10 +1,11 @@
-"""Tool function: discover_paths (设计文档 §3).
+"""Tool function: discover_paths (spec §3.2 ⑤) — path brute-forcing.
 
-Wires FfufAdapter through ComplianceGate. Performs directory/file fuzzing on
-authorized targets.
+Performs directory-fuzzing via FfufAdapter on authorized targets.
+Wired through ComplianceGate with IP/hostname scope enforcement.
 """
 from __future__ import annotations
 
+import os
 from typing import Any
 from urllib.parse import urlparse
 
@@ -45,10 +46,11 @@ def discover_paths(
     safe_params = dict(params)
     safe_params["recursive_depth"] = min(int(params.get("recursive_depth", 1)), 3)
 
-    binaries_dir = __import__("os").environ.get("SECAGENT_BINARIES_DIR", "./bin")
-    wordlists_dir = __import__("os").environ.get("SECAGENT_WORDLISTS_DIR", "./wordlists")
+    binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
+    wordlists_dir = os.environ.get("SECAGENT_WORDLISTS_DIR", "./wordlists")
     adapter = FfufAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120),
+                          proxy_manager=gate.proxy_manager),
         binaries_dir=binaries_dir,
         wordlists_dir=wordlists_dir,
     )

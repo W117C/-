@@ -22,10 +22,9 @@ import uuid
 from typing import Any
 
 from secagent.adapters.base import BaseAdapter
-from secagent.binmgmt.launcher import LaunchResult, Launcher
+from secagent.binmgmt.launcher import Launcher, LaunchResult
 from secagent.binmgmt.versions import get_tool_version
 from secagent.core.finding import Finding, FindingType, Severity
-
 
 # All categories this adapter knows how to turn into findings.
 _CATEGORIES: tuple[str, ...] = ("emails", "subdomains", "hosts", "usernames")

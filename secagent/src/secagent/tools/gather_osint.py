@@ -1,8 +1,7 @@
-"""Tool function: gather_osint (spec §3.2 ④).
+"""Tool function: gather_osint (spec §3.2 ④) — OSINT gathering.
 
-Wires TheHarvesterAdapter through ComplianceGate. OSINT gathering only collects
-public data — no intrusion — so this is a low-risk tool.
-"""
+Collects public OSINT data via TheHarvesterAdapter. Low-risk tool
+(non-intrusive public data only). Wired through ComplianceGate."""
 from __future__ import annotations
 
 import os
@@ -29,7 +28,8 @@ def gather_osint(
         raise InvalidInputError(field="target", reason="must be a non-empty string")
     binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = TheHarvesterAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120),
+                          proxy_manager=gate.proxy_manager),
         binaries_dir=binaries_dir,
     )
     return adapter.run(params)

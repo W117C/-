@@ -17,6 +17,7 @@ def _make_finding(
     title: str,
     evidence: dict | None = None,
     source_tool: str = "subfinder",
+    remediation: str = "",
 ) -> dict:
     return {
         "id": fid,
@@ -26,6 +27,7 @@ def _make_finding(
         "title": title,
         "evidence": evidence or {},
         "source_tool": source_tool,
+        "remediation": remediation,
         "raw": {},
         "timestamp": "2026-06-18T14:30:00+00:00",
     }
@@ -313,3 +315,37 @@ def test_render_markdown_total_findings_zero():
     eng = _make_engagement("eng_empty", "enumerate_subdomains", [])
     out = render_markdown(eng)
     assert "发现总数: 0" in out
+
+
+# ===========================================================================
+# PDF renderer (spec §M8)
+# ===========================================================================
+
+
+def test_render_pdf_produces_valid_pdf(tmp_path):
+    from secagent.report import render_pdf
+
+    engagements = [
+        _make_engagement(
+            "eng_pdf", "web_vuln_scan",
+            [_make_finding("f1", "sqli", "high", "http://x/", "SQLi via id",
+                           {"parameter": "id", "method": "error"}, remediation="Use prepared statements")],
+        )
+    ]
+    out = tmp_path / "report.pdf"
+    returned = render_pdf(engagements, str(out))
+    assert returned == str(out)
+    assert out.exists()
+    # PDF magic header.
+    assert out.read_bytes()[:5] == b"%PDF-"
+    # ReportLab wrote more than just a header.
+    assert out.stat().st_size > 500
+
+
+def test_render_pdf_empty_findings(tmp_path):
+    from secagent.report import render_pdf
+
+    eng = _make_engagement("eng_empty", "web_vuln_scan", [])
+    out = tmp_path / "empty.pdf"
+    render_pdf(eng, str(out))
+    assert out.read_bytes()[:5] == b"%PDF-"

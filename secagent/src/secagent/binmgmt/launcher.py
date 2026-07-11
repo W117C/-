@@ -15,9 +15,8 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-from secagent.core.proxy import PROXY_FLAG_TOOLS, ENV_PROXY_TOOLS, ProxyManager
+from secagent.core.proxy import ENV_PROXY_TOOLS, PROXY_FLAG_TOOLS, ProxyManager
 
 
 @dataclass
@@ -25,7 +24,7 @@ class LaunchResult:
     returncode: int
     stdout: str
     stderr: str
-    json_output: Optional[dict | list] = None
+    json_output: dict | list | None = None
 
     def __post_init__(self) -> None:
         if self.json_output is None:

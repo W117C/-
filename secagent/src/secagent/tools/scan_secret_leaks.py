@@ -32,7 +32,8 @@ def scan_secret_leaks(
         )
     binaries_dir = os.environ.get("SECAGENT_BINARIES_DIR", "./bin")
     adapter = GitleaksAdapter(
-        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120)),
+        launcher=Launcher(timeout_sec=params.get("timeout_sec", 120),
+                          proxy_manager=gate.proxy_manager),
         binaries_dir=binaries_dir,
     )
     return adapter.run(params)

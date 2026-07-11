@@ -21,9 +21,9 @@ import sys
 def _import_mcp():
     try:
         # mcp SDK ≥1.x moved Server into mcp.server; types stays at mcp.types.
-        from mcp.server import Server
-        from mcp import types
         import mcp.server.stdio
+        from mcp import types
+        from mcp.server import Server
     except ImportError as exc:
         sys.stderr.write(
             f"ERROR: MCP SDK not installed. Install with: pip install -e '.[mcp]'\n"

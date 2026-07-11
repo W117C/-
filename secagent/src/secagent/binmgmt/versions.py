@@ -50,6 +50,30 @@ VERSIONS: dict[str, dict] = {
         "download_url": "https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_macos_amd64.tar.gz",
         "binary_name": "ffuf",
     },
+    "katana": {
+        "version": "1.1.2",
+        "checksum_sha256": "placeholder-sha256-katana-1.1.2",
+        "download_url": "https://github.com/projectdiscovery/katana/releases/download/v1.1.2/katana_1.1.2_macOS_amd64.zip",
+        "binary_name": "katana",
+    },
+    "dnsx": {
+        "version": "1.2.2",
+        "checksum_sha256": "placeholder-sha256-dnsx-1.2.2",
+        "download_url": "https://github.com/projectdiscovery/dnsx/releases/download/v1.2.2/dnsx_1.2.2_macOS_amd64.zip",
+        "binary_name": "dnsx",
+    },
+    "tlsx": {
+        "version": "1.1.8",
+        "checksum_sha256": "placeholder-sha256-tlsx-1.1.8",
+        "download_url": "https://github.com/projectdiscovery/tlsx/releases/download/v1.1.8/tlsx_1.1.8_macOS_amd64.zip",
+        "binary_name": "tlsx",
+    },
+    "uncover": {
+        "version": "1.0.9",
+        "checksum_sha256": "placeholder-sha256-uncover-1.0.9",
+        "download_url": "https://github.com/projectdiscovery/uncover/releases/download/v1.0.9/uncover_1.0.9_macOS_amd64.zip",
+        "binary_name": "uncover",
+    },
     # crawl_target uses a built-in Python HTTP crawler (no external binary),
     # so it is intentionally NOT registered here.
 }

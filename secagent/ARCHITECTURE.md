@@ -269,7 +269,7 @@ secagent/
 │
 ├── tests/                      # 测试套件
 │   ├── conftest.py
-│   └── test_*.py               # 524 测试
+│   └── test_*.py               # 661 测试
 │   ├── run_real_targets.py     # 真实目标集成测试
 │
 ├── docs/                       # 文档

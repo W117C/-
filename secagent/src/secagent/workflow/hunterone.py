@@ -291,7 +291,7 @@ def _run_vuln_scan(target: str, authz_token: str,
             default_quota=config.default_quota_per_token,
         )
 
-        modules = ["sqli", "xss", "ssrf"]
+        modules = ["sqli", "xss", "ssrf", "lfi", "idor", "xxe"]
         active_modules = [m for m in modules if m not in skip_modules]
         if skip_modules:
             log.info("  • Skipped modules: %s", sorted(skip_modules))
@@ -532,6 +532,19 @@ def _generate_report(result: WorkflowResult, output_dir: str) -> str:
         "",
         "## 6. Retrospective / Knowledge Archival (复盘归档)",
         "",
+    ]
+
+    # Render workflow-level errors (e.g. TikTok missing --h1-username)
+    if result.errors:
+        lines += [
+            "> ⚠️ **Workflow warnings**:",
+            ">",
+        ]
+        for err in result.errors:
+            lines.append(f"> - {err}")
+        lines += ["", "> ---", ""]
+
+    lines += [
         "> Archive this report to your knowledge base:",
         ">",
         "> ```bash",

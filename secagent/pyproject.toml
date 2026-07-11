@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "secagent"
 version = "0.1.0"
-description = "Security MCP server wrapping SuperSpider + open-source tooling"
+description = "Security MCP server with compliance-gated scanning tools"
 requires-python = ">=3.9"
 dependencies = [
     "click>=8.1",

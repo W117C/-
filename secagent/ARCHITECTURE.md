@@ -265,7 +265,6 @@ secagent/
 │       ├── reverse_bilibili.py
 │       ├── reverse_codex.py
 │       ├── analyze_claude_detection.py
-│       ├── reproduce_claude_detection.py
 │       └── aihot_reverse.py
 │
 ├── tests/                      # 测试套件
